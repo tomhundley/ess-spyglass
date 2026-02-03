@@ -47,18 +47,8 @@ export interface TabContextMenu {
   tab: Tab;
 }
 
-export const TAB_COLORS = [
-  '#4ade80',
-  '#60a5fa',
-  '#f472b6',
-  '#fbbf24',
-  '#a78bfa',
-  '#f87171',
-  '#2dd4bf',
-  '#fb923c',
-  '#a3e635',
-  '#22d3ee',
-];
+// Re-export TAB_COLORS from constants for backwards compatibility
+export { TAB_COLORS } from '../constants/colors';
 
 export function generateId(): string {
   return Math.random().toString(36).substring(2, 9);
