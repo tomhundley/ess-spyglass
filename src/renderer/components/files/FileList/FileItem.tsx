@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { FolderIcon, FileIcon } from '../../icons';
 import { FileEntry, IndexEntry } from '../../../types';
 
@@ -10,7 +11,7 @@ interface FileItemProps {
   onContextMenu: (e: React.MouseEvent) => void;
 }
 
-export function FileItem({
+export const FileItem = memo(function FileItem({
   entry,
   isCopied,
   showPath,
@@ -38,4 +39,4 @@ export function FileItem({
       </div>
     </div>
   );
-}
+});

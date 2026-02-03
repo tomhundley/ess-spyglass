@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { FolderIcon } from '../../icons';
 import { PinnedFolder } from '../../../hooks';
 
@@ -16,7 +17,7 @@ interface PinnedCardProps {
   onContextMenu: (e: React.MouseEvent) => void;
 }
 
-export function PinnedCard({
+export const PinnedCard = memo(function PinnedCard({
   folder,
   isActive,
   isExpandedActive,
@@ -57,4 +58,4 @@ export function PinnedCard({
       <span className="card-name">{folder.name}</span>
     </div>
   );
-}
+});
