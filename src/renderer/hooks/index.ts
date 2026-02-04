@@ -8,3 +8,4 @@ export { useIndexer } from './useIndexer';
 export { useSearch } from './useSearch';
 export { useFocusMode } from './useFocusMode';
 export { useKeyboardShortcuts } from './useKeyboardShortcuts';
+export { useAutoUpdater } from './useAutoUpdater';

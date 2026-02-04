@@ -1,12 +1,20 @@
 {
   "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
-  "appId": "com.spyglass.app",
+  "appId": "com.elegantsoft.spyglass",
   "productName": "Spyglass",
+  "copyright": "Copyright © 2025 Elegant Software Solutions, Inc.",
   "directories": {
     "output": "release"
   },
   "files": [
     "dist/**/*"
+  ],
+  "extraResources": [
+    {
+      "from": "resources",
+      "to": "resources",
+      "filter": ["**/*"]
+    }
   ],
   "mac": {
     "target": ["dmg", "zip"],
@@ -25,5 +33,10 @@
   "nsis": {
     "oneClick": false,
     "allowToChangeInstallationDirectory": true
+  },
+  "publish": {
+    "provider": "github",
+    "owner": "tomhundley",
+    "repo": "spyglass"
   }
 }

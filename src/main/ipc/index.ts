@@ -2,6 +2,7 @@ import { ipcMain, BrowserWindow, clipboard, nativeTheme, app } from 'electron';
 import { registerFileSystemHandlers } from './fileSystem';
 import { registerConfigHandlers } from './config';
 import { registerIndexerHandlers } from './indexer';
+import { registerAutoUpdaterHandlers } from './autoUpdater';
 import { createWindow } from '../services/windows';
 import { join } from 'path';
 
@@ -10,6 +11,7 @@ export function registerIpcHandlers() {
   registerFileSystemHandlers();
   registerConfigHandlers();
   registerIndexerHandlers();
+  registerAutoUpdaterHandlers();
 
   // Clipboard
   ipcMain.handle('clipboard:write', async (_event, text: string) => {

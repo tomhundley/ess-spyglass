@@ -1,5 +1,5 @@
 // Type-safe wrapper for Electron IPC
-import type { FileEntry, IndexEntry, IndexProgress, Config } from '../types';
+import type { FileEntry, IndexEntry, IndexProgress, Config, UpdateState } from '../types';
 
 // Get the electron API from preload script
 const electron = window.electron;
@@ -89,4 +89,25 @@ export function onWindowBlur(callback: () => void): () => void {
 
 export function onWindowFocus(callback: () => void): () => void {
   return electron.onWindowFocus(callback);
+}
+
+// Auto-updater
+export async function getUpdateState(): Promise<UpdateState> {
+  return electron.getUpdateState();
+}
+
+export async function checkForUpdates(): Promise<void> {
+  return electron.checkForUpdates();
+}
+
+export async function downloadUpdate(): Promise<void> {
+  return electron.downloadUpdate();
+}
+
+export async function installUpdate(): Promise<void> {
+  return electron.installUpdate();
+}
+
+export function onUpdateStateChanged(callback: (state: UpdateState) => void): () => void {
+  return electron.onUpdateStateChanged(callback);
 }

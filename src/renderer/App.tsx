@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { FileEntry, IndexEntry } from './types';
 import { BASE_FONT_SIZE, COPY_COLLAPSE_DELAY } from './constants';
 import {
@@ -11,6 +11,7 @@ import {
   useSearch,
   useFocusMode,
   useKeyboardShortcuts,
+  useAutoUpdater,
   PinnedFolder,
 } from './hooks';
 import {
@@ -22,6 +23,7 @@ import {
   FileContextMenu,
   PinnedContextMenu,
   SettingsPanel,
+  UpdateNotification,
 } from './components';
 
 interface FileContextMenuState {
@@ -39,6 +41,9 @@ interface PinnedContextMenuState {
 function App() {
   // Settings panel state
   const [showSettings, setShowSettings] = useState(false);
+
+  // Update notification dismissed state
+  const [updateDismissed, setUpdateDismissed] = useState(false);
 
   // Context menu states
   const [fileContextMenu, setFileContextMenu] = useState<FileContextMenuState | null>(null);
@@ -119,6 +124,22 @@ function App() {
     navigateTo,
     clearSearch,
   });
+
+  // Auto-updater hook
+  const {
+    updateState,
+    checkForUpdates,
+    downloadUpdate,
+    installUpdate,
+  } = useAutoUpdater();
+
+  // Listen for menu events
+  useEffect(() => {
+    const unsubscribe = window.electron.onOpenSettings(() => {
+      setShowSettings(true);
+    });
+    return unsubscribe;
+  }, []);
 
   // Close context menus
   const closeContextMenus = useCallback(() => {
@@ -318,7 +339,19 @@ function App() {
             indexProgress={indexProgress}
             indexCount={indexCount}
             onStartIndexing={startIndexing}
+            updateState={updateState}
+            onCheckForUpdates={checkForUpdates}
             onClose={() => setShowSettings(false)}
+          />
+        )}
+
+        {/* Update Notification */}
+        {!updateDismissed && (
+          <UpdateNotification
+            updateState={updateState}
+            onDownload={downloadUpdate}
+            onInstall={installUpdate}
+            onDismiss={() => setUpdateDismissed(true)}
           />
         )}
       </div>

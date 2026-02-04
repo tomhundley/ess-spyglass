@@ -53,3 +53,23 @@ export { TAB_COLORS } from '../constants/colors';
 export function generateId(): string {
   return Math.random().toString(36).substring(2, 9);
 }
+
+// Auto-updater types
+export interface UpdateInfo {
+  version: string;
+  releaseDate?: string;
+}
+
+export interface ProgressInfo {
+  percent: number;
+  bytesPerSecond: number;
+  total: number;
+  transferred: number;
+}
+
+export interface UpdateState {
+  status: 'idle' | 'checking' | 'available' | 'downloading' | 'downloaded' | 'error';
+  info?: UpdateInfo;
+  progress?: ProgressInfo;
+  error?: string;
+}

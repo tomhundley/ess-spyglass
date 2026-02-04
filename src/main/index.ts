@@ -3,6 +3,8 @@ import { join } from 'path';
 import { registerIpcHandlers } from './ipc';
 import { createTray, destroyTray } from './services/tray';
 import { createWindow, getAllWindows, getMainWindow } from './services/windows';
+import { initAutoUpdater } from './services/autoUpdater';
+import { createAppMenu } from './services/menu';
 import store from './store';
 
 let mainWindow: BrowserWindow | null = null;
@@ -89,6 +91,14 @@ if (!gotTheLock) {
 
     // Create the main window
     createMainWindow();
+
+    // Create application menu
+    createAppMenu(mainWindow);
+
+    // Initialize auto-updater (only works in packaged app)
+    if (app.isPackaged && mainWindow) {
+      initAutoUpdater(mainWindow);
+    }
 
     // Create system tray
     createTray();

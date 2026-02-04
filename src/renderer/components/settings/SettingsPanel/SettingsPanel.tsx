@@ -1,9 +1,10 @@
 import { CloseIcon } from '../../icons';
 import { Theme } from '../../../hooks';
-import { IndexProgress } from '../../../types';
+import { IndexProgress, UpdateState } from '../../../types';
 import { ThemeSection } from './ThemeSection';
 import { DisplaySection } from './DisplaySection';
 import { IndexSection } from './IndexSection';
+import { AboutSection } from './AboutSection';
 
 interface SettingsPanelProps {
   // Theme
@@ -26,6 +27,10 @@ interface SettingsPanelProps {
   indexCount: number;
   onStartIndexing: () => void;
 
+  // Updates
+  updateState: UpdateState;
+  onCheckForUpdates: () => void;
+
   // Panel
   onClose: () => void;
 }
@@ -45,6 +50,8 @@ export function SettingsPanel({
   indexProgress,
   indexCount,
   onStartIndexing,
+  updateState,
+  onCheckForUpdates,
   onClose,
 }: SettingsPanelProps) {
   return (
@@ -73,6 +80,10 @@ export function SettingsPanel({
             indexProgress={indexProgress}
             indexCount={indexCount}
             onStartIndexing={onStartIndexing}
+          />
+          <AboutSection
+            onCheckForUpdates={onCheckForUpdates}
+            isCheckingForUpdates={updateState.status === 'checking'}
           />
         </div>
       </div>

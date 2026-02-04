@@ -1,7 +1,8 @@
 {
-  "name": "spyglass-electron",
+  "name": "spyglass",
+  "productName": "Spyglass",
   "version": "1.0.0",
-  "description": "A fast file explorer with fuzzy search",
+  "description": "A lightning-fast file explorer with fuzzy search for power users",
   "main": "dist/main/index.js",
   "scripts": {
     "dev": "electron-vite dev",
@@ -14,6 +15,7 @@
   },
   "dependencies": {
     "electron-store": "^8.1.0",
+    "electron-updater": "^6.3.0",
     "fuse.js": "^7.1.0"
   },
   "devDependencies": {
@@ -29,6 +31,16 @@
     "typescript": "~5.6.0",
     "vite": "^5.4.0"
   },
-  "author": "",
-  "license": "MIT"
+  "author": {
+    "name": "Elegant Software Solutions, Inc."
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/tomhundley/spyglass",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tomhundley/spyglass.git"
+  },
+  "bugs": {
+    "url": "https://github.com/tomhundley/spyglass/issues"
+  }
 }

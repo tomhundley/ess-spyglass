@@ -38,6 +38,25 @@ export interface Config {
   active_tab_id: string | null;
 }
 
+export interface UpdateInfo {
+  version: string;
+  releaseDate?: string;
+}
+
+export interface ProgressInfo {
+  percent: number;
+  bytesPerSecond: number;
+  total: number;
+  transferred: number;
+}
+
+export interface UpdateState {
+  status: 'idle' | 'checking' | 'available' | 'downloading' | 'downloaded' | 'error';
+  info?: UpdateInfo;
+  progress?: ProgressInfo;
+  error?: string;
+}
+
 export interface ElectronAPI {
   // File system operations
   readDirectory: (path: string) => Promise<FileEntry[]>;
@@ -77,6 +96,16 @@ export interface ElectronAPI {
 
   // App info
   getAppVersion: () => Promise<string>;
+
+  // Auto-updater
+  getUpdateState: () => Promise<UpdateState>;
+  checkForUpdates: () => Promise<void>;
+  downloadUpdate: () => Promise<void>;
+  installUpdate: () => Promise<void>;
+  onUpdateStateChanged: (callback: (state: UpdateState) => void) => () => void;
+
+  // Menu events
+  onOpenSettings: (callback: () => void) => () => void;
 }
 
 // Expose the API to the renderer process
@@ -131,6 +160,24 @@ const api: ElectronAPI = {
 
   // App info
   getAppVersion: () => ipcRenderer.invoke('app:getVersion'),
+
+  // Auto-updater
+  getUpdateState: () => ipcRenderer.invoke('update:getState'),
+  checkForUpdates: () => ipcRenderer.invoke('update:check'),
+  downloadUpdate: () => ipcRenderer.invoke('update:download'),
+  installUpdate: () => ipcRenderer.invoke('update:install'),
+  onUpdateStateChanged: (callback: (state: UpdateState) => void) => {
+    const handler = (_event: Electron.IpcRendererEvent, state: UpdateState) => callback(state);
+    ipcRenderer.on('update:state-changed', handler);
+    return () => ipcRenderer.removeListener('update:state-changed', handler);
+  },
+
+  // Menu events
+  onOpenSettings: (callback: () => void) => {
+    const handler = () => callback();
+    ipcRenderer.on('open-settings', handler);
+    return () => ipcRenderer.removeListener('open-settings', handler);
+  },
 };
 
 contextBridge.exposeInMainWorld('electron', api);
