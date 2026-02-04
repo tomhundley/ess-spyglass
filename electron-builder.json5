@@ -37,6 +37,6 @@
   "publish": {
     "provider": "github",
     "owner": "tomhundley",
-    "repo": "spyglass"
+    "repo": "ess-spyglass"
   }
 }
