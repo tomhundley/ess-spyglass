@@ -13,12 +13,14 @@ app.name = 'Spyglass';
 let mainWindow: BrowserWindow | null = null;
 
 function createMainWindow() {
-  // Get saved window size
+  // Get saved window size, but ensure minimum height for explore mode
   const savedSize = store.get('windowSize', { width: 700, height: 600 }) as { width: number; height: number };
+  const MIN_EXPLORE_HEIGHT = 400; // Minimum height to ensure explore mode is usable
+  const height = Math.max(savedSize.height, MIN_EXPLORE_HEIGHT);
 
   mainWindow = createWindow({
     width: savedSize.width,
-    height: savedSize.height,
+    height: height,
     minWidth: 300,
     minHeight: 38,
     title: 'Spyglass',
