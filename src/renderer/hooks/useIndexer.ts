@@ -44,14 +44,14 @@ export function useIndexer() {
   }, [isIndexing]);
 
   // Search indexed files
-  const searchIndexed = useCallback(async (query: string) => {
+  const searchIndexed = useCallback(async (query: string, currentPath?: string) => {
     if (!query || query.length < MIN_SEARCH_LENGTH) {
       setIndexedResults([]);
       return;
     }
     const requestId = ++indexSearchRequestIdRef.current;
     try {
-      const results = await api.searchIndex(query);
+      const results = await api.searchIndex(query, currentPath);
       if (requestId !== indexSearchRequestIdRef.current) return;
       setIndexedResults(results);
     } catch (e) {

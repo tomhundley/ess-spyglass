@@ -110,6 +110,7 @@ function App() {
     searchIndexed,
     clearIndexedResults,
     searchDebounceDelay,
+    currentPath,
   });
 
   // Focus mode hook
@@ -120,10 +121,20 @@ function App() {
     toggleFocusMode,
     expandToFolder,
     collapseToStrip,
+    handleMouseEnter,
+    handleMouseLeave,
+    setExpandedEntryCount,
   } = useFocusMode({
     navigateTo,
     clearSearch,
   });
+
+  // Update entry count when entries change (for dynamic height in focus mode)
+  useEffect(() => {
+    if (focusMode && isExpanded) {
+      setExpandedEntryCount(entries.length);
+    }
+  }, [focusMode, isExpanded, entries.length, setExpandedEntryCount]);
 
   // Auto-updater hook
   const {
@@ -229,6 +240,8 @@ function App() {
         className={appClassName}
         style={{ fontSize: `${appZoom * BASE_FONT_SIZE}px` }}
         onClick={closeContextMenus}
+        onMouseEnter={focusMode && isExpanded ? handleMouseEnter : undefined}
+        onMouseLeave={focusMode && isExpanded ? handleMouseLeave : undefined}
       >
         {/* Pinned Folders Bar */}
         <PinnedFoldersBar
@@ -253,7 +266,7 @@ function App() {
 
         {/* Content area - hidden in collapsed focus mode */}
         {(!focusMode || isExpanded) && (
-          <div className={focusMode ? 'expanded-content-area' : ''}>
+          <div className={focusMode ? 'expanded-content-area' : 'content-area'}>
             {/* Breadcrumb */}
             <Breadcrumb
               segments={breadcrumbSegments}

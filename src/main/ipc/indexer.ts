@@ -4,6 +4,7 @@ import * as fsSync from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 
+
 export interface IndexEntry {
   name: string;
   path: string;
@@ -52,6 +53,32 @@ let indexProgress: IndexProgress = {
   is_complete: false,
 };
 let isIndexing = false;
+
+// Calculate proximity score based on path distance from current folder
+function calculateProximityScore(entryPath: string, currentPath: string): number {
+  if (!currentPath) return 0;
+
+  const entryParts = entryPath.split('/').filter(Boolean);
+  const currentParts = currentPath.split('/').filter(Boolean);
+
+  // Find common prefix length
+  let commonDepth = 0;
+  for (let i = 0; i < Math.min(entryParts.length, currentParts.length); i++) {
+    if (entryParts[i] === currentParts[i]) {
+      commonDepth++;
+    } else {
+      break;
+    }
+  }
+
+  // Calculate distance: levels up from current + levels down to entry
+  const levelsUp = currentParts.length - commonDepth;
+  const levelsDown = entryParts.length - commonDepth - 1; // -1 for the file/folder itself
+  const distance = levelsUp + levelsDown;
+
+  // Proximity bonus: max 500 for same folder, decreasing by 50 per level
+  return Math.max(0, 500 - (distance * 50));
+}
 
 function getConfigDir(): string {
   const configDir = process.platform === 'darwin'
@@ -188,7 +215,7 @@ export function registerIndexerHandlers() {
     return { ...indexProgress };
   });
 
-  ipcMain.handle('indexer:search', async (_event, query: string): Promise<IndexEntry[]> => {
+  ipcMain.handle('indexer:search', async (_event, query: string, currentPath?: string): Promise<IndexEntry[]> => {
     if (!query || query.length < 2) {
       return [];
     }
@@ -234,6 +261,11 @@ export function registerIndexerHandlers() {
       // Files in projects folder get bonus
       if (entry.path.includes('/projects/')) {
         score += 100;
+      }
+
+      // Proximity bonus (closer to current folder ranks higher)
+      if (currentPath) {
+        score += calculateProximityScore(entry.path, currentPath);
       }
 
       scored.push({ score, entry });

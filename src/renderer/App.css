@@ -107,6 +107,14 @@ body {
   flex-direction: column;
 }
 
+/* Content area wrapper */
+.content-area {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+}
+
 /* Expanded content area for focus mode */
 .expanded-content-area {
   display: flex;

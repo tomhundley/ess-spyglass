@@ -1,4 +1,4 @@
-import { BrowserWindow, app } from 'electron';
+import { BrowserWindow, app, dialog, clipboard } from 'electron';
 import { autoUpdater, UpdateInfo, ProgressInfo } from 'electron-updater';
 
 export interface UpdateState {
@@ -18,6 +18,7 @@ export interface UpdateState {
 
 let mainWindow: BrowserWindow | null = null;
 let updateState: UpdateState = { status: 'idle' };
+let isManualCheck = false;
 
 function sendUpdateState() {
   if (mainWindow && !mainWindow.isDestroyed()) {
@@ -48,7 +49,7 @@ export function initAutoUpdater(window: BrowserWindow) {
     setUpdateState({ status: 'checking', error: undefined });
   });
 
-  autoUpdater.on('update-available', (info: UpdateInfo) => {
+  autoUpdater.on('update-available', async (info: UpdateInfo) => {
     setUpdateState({
       status: 'available',
       info: {
@@ -56,10 +57,36 @@ export function initAutoUpdater(window: BrowserWindow) {
         releaseDate: info.releaseDate,
       },
     });
+
+    if (isManualCheck) {
+      isManualCheck = false;
+      const result = await dialog.showMessageBox({
+        type: 'info',
+        title: 'Update Available',
+        message: `A new version of Spyglass is available!`,
+        detail: `Version ${info.version} is ready to download.\n\nCurrent version: ${app.getVersion()}`,
+        buttons: ['Download', 'Later'],
+        defaultId: 0,
+      });
+
+      if (result.response === 0) {
+        downloadUpdate();
+      }
+    }
   });
 
   autoUpdater.on('update-not-available', () => {
     setUpdateState({ status: 'idle' });
+    if (isManualCheck) {
+      isManualCheck = false;
+      dialog.showMessageBox({
+        type: 'info',
+        title: 'No Updates Available',
+        message: 'You\'re up to date!',
+        detail: `Spyglass ${app.getVersion()} is the latest version.`,
+        buttons: ['OK'],
+      });
+    }
   });
 
   autoUpdater.on('download-progress', (progress: ProgressInfo) => {
@@ -85,11 +112,28 @@ export function initAutoUpdater(window: BrowserWindow) {
     });
   });
 
-  autoUpdater.on('error', (error: Error) => {
+  autoUpdater.on('error', async (error: Error) => {
+    const errorMessage = error.message;
     setUpdateState({
       status: 'error',
-      error: error.message,
+      error: errorMessage,
     });
+
+    if (isManualCheck) {
+      isManualCheck = false;
+      const result = await dialog.showMessageBox({
+        type: 'error',
+        title: 'Update Failed',
+        message: 'Failed to check for updates',
+        detail: errorMessage,
+        buttons: ['Copy Error', 'OK'],
+        defaultId: 1,
+      });
+
+      if (result.response === 0) {
+        clipboard.writeText(errorMessage);
+      }
+    }
   });
 
   // Check for updates on startup (after a short delay)
@@ -98,14 +142,32 @@ export function initAutoUpdater(window: BrowserWindow) {
   }, 3000);
 }
 
-export async function checkForUpdates(): Promise<void> {
+export async function checkForUpdates(manual = false): Promise<void> {
   if (!app.isPackaged) {
+    if (manual) {
+      dialog.showMessageBox({
+        type: 'info',
+        title: 'Development Mode',
+        message: 'Auto-update is disabled in development mode.',
+        buttons: ['OK'],
+      });
+    }
     return;
   }
+  isManualCheck = manual;
   try {
     await autoUpdater.checkForUpdates();
   } catch (error) {
     console.error('Failed to check for updates:', error);
+    if (manual) {
+      dialog.showMessageBox({
+        type: 'error',
+        title: 'Update Check Failed',
+        message: 'Failed to check for updates.',
+        detail: error instanceof Error ? error.message : 'Unknown error',
+        buttons: ['OK'],
+      });
+    }
   }
 }
 

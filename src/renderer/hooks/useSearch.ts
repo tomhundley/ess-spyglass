@@ -6,9 +6,10 @@ import { FUSE_THRESHOLD, STORAGE_KEYS } from '../constants';
 interface UseSearchProps {
   entries: FileEntry[];
   indexedResults: IndexEntry[];
-  searchIndexed: (query: string) => Promise<void>;
+  searchIndexed: (query: string, currentPath?: string) => Promise<void>;
   clearIndexedResults: () => void;
   searchDebounceDelay: number;
+  currentPath?: string;
 }
 
 export function useSearch({
@@ -17,6 +18,7 @@ export function useSearch({
   searchIndexed,
   clearIndexedResults,
   searchDebounceDelay,
+  currentPath,
 }: UseSearchProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [useIndexSearch, setUseIndexSearch] = useState(true);
@@ -65,11 +67,11 @@ export function useSearch({
     }
 
     const timeout = setTimeout(() => {
-      searchIndexed(searchQuery);
+      searchIndexed(searchQuery, currentPath);
     }, searchDebounceDelay);
 
     return () => clearTimeout(timeout);
-  }, [searchQuery, useIndexSearch, searchIndexed, clearIndexedResults, searchDebounceDelay]);
+  }, [searchQuery, useIndexSearch, searchIndexed, clearIndexedResults, searchDebounceDelay, currentPath]);
 
   const clearSearch = useCallback(() => {
     setSearchQuery('');

@@ -284,7 +284,7 @@ export function createAppMenu(mainWindow: BrowserWindow | null) {
         { type: 'separator' as const },
         {
           label: 'Check for Updates...',
-          click: () => checkForUpdates(),
+          click: () => checkForUpdates(true),
         },
         { type: 'separator' as const },
         {

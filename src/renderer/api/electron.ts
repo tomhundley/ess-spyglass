@@ -44,8 +44,8 @@ export async function getIndexProgress(): Promise<IndexProgress> {
   return electron.getIndexProgress();
 }
 
-export async function searchIndex(query: string): Promise<IndexEntry[]> {
-  return electron.searchIndex(query);
+export async function searchIndex(query: string, currentPath?: string): Promise<IndexEntry[]> {
+  return electron.searchIndex(query, currentPath);
 }
 
 export async function loadSavedIndex(): Promise<boolean> {

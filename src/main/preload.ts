@@ -74,7 +74,7 @@ export interface ElectronAPI {
   // Indexing
   startIndexing: () => Promise<void>;
   getIndexProgress: () => Promise<IndexProgress>;
-  searchIndex: (query: string) => Promise<IndexEntry[]>;
+  searchIndex: (query: string, currentPath?: string) => Promise<IndexEntry[]>;
   loadSavedIndex: () => Promise<boolean>;
   getIndexCount: () => Promise<number>;
 
@@ -126,7 +126,7 @@ const api: ElectronAPI = {
   // Indexing
   startIndexing: () => ipcRenderer.invoke('indexer:start'),
   getIndexProgress: () => ipcRenderer.invoke('indexer:getProgress'),
-  searchIndex: (query: string) => ipcRenderer.invoke('indexer:search', query),
+  searchIndex: (query: string, currentPath?: string) => ipcRenderer.invoke('indexer:search', query, currentPath),
   loadSavedIndex: () => ipcRenderer.invoke('indexer:loadSaved'),
   getIndexCount: () => ipcRenderer.invoke('indexer:getCount'),
 
