@@ -22,12 +22,12 @@ export function useSearch({
 }: UseSearchProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [useIndexSearch, setUseIndexSearch] = useState(true);
-  const [showPaths, setShowPaths] = useState(false);
+  const [showPaths, setShowPaths] = useState(true);
 
   // Load saved preferences
   useEffect(() => {
     const savedShowPaths = localStorage.getItem(STORAGE_KEYS.SHOW_PATHS);
-    if (savedShowPaths) setShowPaths(savedShowPaths === 'true');
+    if (savedShowPaths !== null) setShowPaths(savedShowPaths === 'true');
   }, []);
 
   // Toggle paths

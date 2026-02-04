@@ -7,6 +7,9 @@ import { initAutoUpdater } from './services/autoUpdater';
 import { createAppMenu } from './services/menu';
 import store from './store';
 
+// Set app name (ensures correct name in menu bar and dialogs)
+app.name = 'Spyglass';
+
 let mainWindow: BrowserWindow | null = null;
 
 function createMainWindow() {
@@ -19,6 +22,7 @@ function createMainWindow() {
     minWidth: 300,
     minHeight: 38,
     title: 'Spyglass',
+    icon: join(__dirname, '../../resources/icon.png'),
     show: false,
     frame: true,
     titleBarStyle: 'hiddenInset',

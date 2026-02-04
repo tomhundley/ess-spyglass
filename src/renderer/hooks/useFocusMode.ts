@@ -69,28 +69,6 @@ export function useFocusMode({ navigateTo, clearSearch }: UseFocusModeProps) {
     await api.setWindowSize(currentSize.width, height);
   }, [focusMode, isExpanded, calculateExpandedHeight]);
 
-  // Expand to show folder contents
-  const expandToFolder = useCallback(async (folder: PinnedFolder) => {
-    if (!focusMode) return;
-
-    // Cancel any pending collapse
-    if (collapseTimeoutRef.current) {
-      clearTimeout(collapseTimeoutRef.current);
-      collapseTimeoutRef.current = null;
-    }
-
-    setExpandedFolderId(folder.id);
-    setIsExpanded(true);
-    isMouseInsideRef.current = true;
-
-    // Navigate to the folder
-    await navigateTo(folder.path);
-
-    // Start with minimum height, will adjust when entries load
-    const currentSize = await api.getWindowSize();
-    await api.setWindowSize(currentSize.width, MIN_EXPANDED_HEIGHT);
-  }, [focusMode, navigateTo]);
-
   // Collapse back to strip
   const collapseToStrip = useCallback(async () => {
     if (!focusMode) return;
@@ -105,6 +83,34 @@ export function useFocusMode({ navigateTo, clearSearch }: UseFocusModeProps) {
     const height = savedCollapsedHeight ? parseInt(savedCollapsedHeight) : FOCUS_COLLAPSED_HEIGHT;
     await api.setWindowSize(currentSize.width, height);
   }, [focusMode, clearSearch]);
+
+  // Toggle expand/collapse for a folder
+  const expandToFolder = useCallback(async (folder: PinnedFolder) => {
+    if (!focusMode) return;
+
+    // Cancel any pending collapse
+    if (collapseTimeoutRef.current) {
+      clearTimeout(collapseTimeoutRef.current);
+      collapseTimeoutRef.current = null;
+    }
+
+    // If clicking the same folder that's already expanded, collapse it
+    if (isExpanded && expandedFolderId === folder.id) {
+      await collapseToStrip();
+      return;
+    }
+
+    setExpandedFolderId(folder.id);
+    setIsExpanded(true);
+    isMouseInsideRef.current = true;
+
+    // Navigate to the folder
+    await navigateTo(folder.path);
+
+    // Start with minimum height, will adjust when entries load
+    const currentSize = await api.getWindowSize();
+    await api.setWindowSize(currentSize.width, MIN_EXPANDED_HEIGHT);
+  }, [focusMode, navigateTo, isExpanded, expandedFolderId, collapseToStrip]);
 
   // Handle mouse entering the expanded content area
   const handleMouseEnter = useCallback(() => {
