@@ -13,8 +13,8 @@ const MOUSE_LEAVE_COLLAPSE_DELAY = 3000;
 // Row height for calculating dynamic expanded height
 const ROW_HEIGHT = 32;
 const HEADER_HEIGHT = 90; // Breadcrumb + search bar
-const MIN_EXPANDED_HEIGHT = 200;
-const MAX_EXPANDED_HEIGHT = 600;
+const MIN_EXPANDED_HEIGHT = 300;
+const MAX_EXPANDED_HEIGHT = 1800;
 
 interface UseFocusModeProps {
   navigateTo: (path: string) => Promise<void>;
@@ -62,12 +62,10 @@ export function useFocusMode({ navigateTo, clearSearch }: UseFocusModeProps) {
 
   // Update window height when entry count changes
   const updateExpandedHeight = useCallback(async (count: number) => {
-    if (!focusMode || !isExpanded) return;
-
     const currentSize = await api.getWindowSize();
     const height = calculateExpandedHeight(count);
     await api.setWindowSize(currentSize.width, height);
-  }, [focusMode, isExpanded, calculateExpandedHeight]);
+  }, [calculateExpandedHeight]);
 
   // Collapse back to strip
   const collapseToStrip = useCallback(async () => {

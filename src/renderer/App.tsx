@@ -131,10 +131,10 @@ function App() {
 
   // Update entry count when entries change (for dynamic height in focus mode)
   useEffect(() => {
-    if (focusMode && isExpanded) {
+    if (focusMode && isExpanded && entries.length > 0) {
       setExpandedEntryCount(entries.length);
     }
-  }, [focusMode, isExpanded, entries.length, setExpandedEntryCount]);
+  }, [focusMode, isExpanded, entries, setExpandedEntryCount]);
 
   // Auto-updater hook
   const {
