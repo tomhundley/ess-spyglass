@@ -104,7 +104,7 @@ async function indexDirectory(
   dirPath: string,
   entries: IndexEntry[],
   lowerNamesArr: string[],
-  skipHidden: boolean = true
+  skipHidden: boolean = false
 ): Promise<void> {
   try {
     const dirEntries = await fs.readdir(dirPath, { withFileTypes: true });
@@ -185,7 +185,7 @@ export function registerIndexerHandlers() {
         const newEntries: IndexEntry[] = [];
         const newLowerNames: string[] = [];
 
-        await indexDirectory(homeDir, newEntries, newLowerNames, true);
+        await indexDirectory(homeDir, newEntries, newLowerNames, false);
 
         // Update global state
         indexEntries = newEntries;

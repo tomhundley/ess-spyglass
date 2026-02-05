@@ -16,11 +16,6 @@ export function registerFileSystemHandlers() {
       const fileEntries: FileEntry[] = [];
 
       for (const entry of entries) {
-        // Skip hidden files (starting with .)
-        if (entry.name.startsWith('.')) {
-          continue;
-        }
-
         fileEntries.push({
           name: entry.name,
           path: path.join(dirPath, entry.name),

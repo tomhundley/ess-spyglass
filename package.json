@@ -1,7 +1,7 @@
 {
   "name": "spyglass",
   "productName": "Spyglass",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "A lightning-fast file explorer with fuzzy search for power users",
   "main": "dist/main/index.js",
   "scripts": {

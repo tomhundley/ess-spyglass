@@ -13,9 +13,11 @@ interface SettingsPanelProps {
 
   // Display
   showPaths: boolean;
+  showHiddenFiles: boolean;
   useIndexSearch: boolean;
   appZoom: number;
   onTogglePaths: () => void;
+  onToggleHiddenFiles: () => void;
   onToggleIndexSearch: () => void;
   onZoomIn: () => void;
   onZoomOut: () => void;
@@ -39,9 +41,11 @@ export function SettingsPanel({
   theme,
   onChangeTheme,
   showPaths,
+  showHiddenFiles,
   useIndexSearch,
   appZoom,
   onTogglePaths,
+  onToggleHiddenFiles,
   onToggleIndexSearch,
   onZoomIn,
   onZoomOut,
@@ -67,9 +71,11 @@ export function SettingsPanel({
           <ThemeSection theme={theme} onChangeTheme={onChangeTheme} />
           <DisplaySection
             showPaths={showPaths}
+            showHiddenFiles={showHiddenFiles}
             useIndexSearch={useIndexSearch}
             appZoom={appZoom}
             onTogglePaths={onTogglePaths}
+            onToggleHiddenFiles={onToggleHiddenFiles}
             onToggleIndexSearch={onToggleIndexSearch}
             onZoomIn={onZoomIn}
             onZoomOut={onZoomOut}

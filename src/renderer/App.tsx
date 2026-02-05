@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { FileEntry, IndexEntry } from './types';
 import { BASE_FONT_SIZE, COPY_COLLAPSE_DELAY } from './constants';
 import {
@@ -12,6 +12,7 @@ import {
   useFocusMode,
   useKeyboardShortcuts,
   useAutoUpdater,
+  useHiddenFiles,
   PinnedFolder,
 } from './hooks';
 import {
@@ -37,6 +38,8 @@ interface PinnedContextMenuState {
   y: number;
   folder: PinnedFolder;
 }
+
+const isHiddenName = (name: string) => name.startsWith('.');
 
 function App() {
   // Settings panel state
@@ -81,6 +84,9 @@ function App() {
     isPinned,
   } = usePinnedFolders(currentPath);
 
+  // Hidden files toggle
+  const { showHiddenFiles, toggleShowHiddenFiles } = useHiddenFiles();
+
   // Indexer hook
   const {
     indexProgress,
@@ -92,6 +98,16 @@ function App() {
     clearIndexedResults,
     searchDebounceDelay,
   } = useIndexer();
+
+  const visibleEntries = useMemo(() => {
+    if (showHiddenFiles) return entries;
+    return entries.filter(entry => !isHiddenName(entry.name));
+  }, [entries, showHiddenFiles]);
+
+  const visibleIndexedResults = useMemo(() => {
+    if (showHiddenFiles) return indexedResults;
+    return indexedResults.filter(entry => !isHiddenName(entry.name));
+  }, [indexedResults, showHiddenFiles]);
 
   // Search hook
   const {
@@ -105,8 +121,8 @@ function App() {
     filteredEntries,
     indexedGroups,
   } = useSearch({
-    entries,
-    indexedResults,
+    entries: visibleEntries,
+    indexedResults: visibleIndexedResults,
     searchIndexed,
     clearIndexedResults,
     searchDebounceDelay,
@@ -131,10 +147,10 @@ function App() {
 
   // Update entry count when entries change (for dynamic height in focus mode)
   useEffect(() => {
-    if (focusMode && isExpanded && entries.length > 0) {
-      setExpandedEntryCount(entries.length);
+    if (focusMode && isExpanded && visibleEntries.length > 0) {
+      setExpandedEntryCount(visibleEntries.length);
     }
-  }, [focusMode, isExpanded, entries, setExpandedEntryCount]);
+  }, [focusMode, isExpanded, visibleEntries, setExpandedEntryCount]);
 
   // Auto-updater hook
   const {
@@ -295,7 +311,7 @@ function App() {
               searchQuery={searchQuery}
               useIndexSearch={useIndexSearch}
               filteredEntries={filteredEntries}
-              indexedResults={indexedResults}
+              indexedResults={visibleIndexedResults}
               indexedGroups={indexedGroups}
               copiedPath={copiedPath}
               showPaths={showPaths}
@@ -341,9 +357,11 @@ function App() {
             theme={theme}
             onChangeTheme={changeTheme}
             showPaths={showPaths}
+            showHiddenFiles={showHiddenFiles}
             useIndexSearch={useIndexSearch}
             appZoom={appZoom}
             onTogglePaths={togglePaths}
+            onToggleHiddenFiles={toggleShowHiddenFiles}
             onToggleIndexSearch={() => setUseIndexSearch(!useIndexSearch)}
             onZoomIn={zoomIn}
             onZoomOut={zoomOut}

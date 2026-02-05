@@ -31,7 +31,7 @@ export async function loadConfig(): Promise<Config> {
   return electron.loadConfig();
 }
 
-export async function saveConfig(config: Config): Promise<void> {
+export async function saveConfig(config: Partial<Config>): Promise<void> {
   return electron.saveConfig(config);
 }
 

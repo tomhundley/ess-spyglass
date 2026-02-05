@@ -2,9 +2,11 @@ import { ZOOM_MIN, ZOOM_MAX, ZOOM_STEP, ZOOM_DEFAULT } from '../../../constants'
 
 interface DisplaySectionProps {
   showPaths: boolean;
+  showHiddenFiles: boolean;
   useIndexSearch: boolean;
   appZoom: number;
   onTogglePaths: () => void;
+  onToggleHiddenFiles: () => void;
   onToggleIndexSearch: () => void;
   onZoomIn: () => void;
   onZoomOut: () => void;
@@ -13,9 +15,11 @@ interface DisplaySectionProps {
 
 export function DisplaySection({
   showPaths,
+  showHiddenFiles,
   useIndexSearch,
   appZoom,
   onTogglePaths,
+  onToggleHiddenFiles,
   onToggleIndexSearch,
   onZoomIn,
   onZoomOut,
@@ -32,6 +36,14 @@ export function DisplaySection({
             onChange={onTogglePaths}
           />
           <span>Show full file paths</span>
+        </label>
+        <label className="settings-toggle">
+          <input
+            type="checkbox"
+            checked={showHiddenFiles}
+            onChange={onToggleHiddenFiles}
+          />
+          <span>Show hidden files and folders</span>
         </label>
         <label className="settings-toggle">
           <input

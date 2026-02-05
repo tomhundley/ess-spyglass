@@ -31,6 +31,7 @@ export interface Config {
   global_hotkey: string | null;
   remember_location: boolean;
   last_location: string | null;
+  show_hidden_files: boolean;
   tabs: Tab[] | null;
   active_tab_id: string | null;
 }

@@ -13,6 +13,7 @@ export interface Config {
   global_hotkey: string | null;
   remember_location: boolean;
   last_location: string | null;
+  show_hidden_files: boolean;
   tabs: Tab[] | null;
   active_tab_id: string | null;
 }
@@ -22,6 +23,7 @@ const DEFAULT_CONFIG: Config = {
   global_hotkey: 'CommandOrControl+Shift+Space',
   remember_location: true,
   last_location: null,
+  show_hidden_files: true,
   tabs: null,
   active_tab_id: null,
 };
@@ -32,7 +34,8 @@ export function registerConfigHandlers() {
     return { ...DEFAULT_CONFIG, ...config };
   });
 
-  ipcMain.handle('config:save', async (_event, config: Config): Promise<void> => {
-    store.set('config', config);
+  ipcMain.handle('config:save', async (_event, config: Partial<Config>): Promise<void> => {
+    const current = store.get('config', DEFAULT_CONFIG) as Config;
+    store.set('config', { ...DEFAULT_CONFIG, ...current, ...config });
   });
 }

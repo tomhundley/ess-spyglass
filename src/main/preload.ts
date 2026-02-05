@@ -34,6 +34,7 @@ export interface Config {
   global_hotkey: string | null;
   remember_location: boolean;
   last_location: string | null;
+  show_hidden_files: boolean;
   tabs: Tab[] | null;
   active_tab_id: string | null;
 }
@@ -69,7 +70,7 @@ export interface ElectronAPI {
 
   // Config
   loadConfig: () => Promise<Config>;
-  saveConfig: (config: Config) => Promise<void>;
+  saveConfig: (config: Partial<Config>) => Promise<void>;
 
   // Indexing
   startIndexing: () => Promise<void>;
@@ -121,7 +122,7 @@ const api: ElectronAPI = {
 
   // Config
   loadConfig: () => ipcRenderer.invoke('config:load'),
-  saveConfig: (config: Config) => ipcRenderer.invoke('config:save', config),
+  saveConfig: (config: Partial<Config>) => ipcRenderer.invoke('config:save', config),
 
   // Indexing
   startIndexing: () => ipcRenderer.invoke('indexer:start'),

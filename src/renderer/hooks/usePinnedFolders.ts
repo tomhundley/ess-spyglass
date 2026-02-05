@@ -18,12 +18,9 @@ export function usePinnedFolders(currentPath: string) {
   const savePinnedFolders = useCallback(async (folders: PinnedFolder[]) => {
     try {
       await api.saveConfig({
-        root_folder: null,
-        global_hotkey: null,
         remember_location: true,
         last_location: currentPath,
         tabs: folders.map(f => ({ id: f.id, path: f.path, name: f.name, color: f.color })),
-        active_tab_id: null,
       });
     } catch (e) {
       console.error('Failed to save pinned folders:', e);
