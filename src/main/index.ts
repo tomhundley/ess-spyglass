@@ -3,7 +3,8 @@ import { join } from 'path';
 import { registerIpcHandlers } from './ipc';
 import { createTray, destroyTray } from './services/tray';
 import { createWindow, getAllWindows, getMainWindow } from './services/windows';
-import { initAutoUpdater } from './services/autoUpdater';
+// Auto-updater disabled - requires code signing
+// import { initAutoUpdater } from './services/autoUpdater';
 import { createAppMenu } from './services/menu';
 import store from './store';
 
@@ -101,10 +102,11 @@ if (!gotTheLock) {
     // Create application menu
     createAppMenu(mainWindow);
 
-    // Initialize auto-updater (only works in packaged app)
-    if (app.isPackaged && mainWindow) {
-      initAutoUpdater(mainWindow);
-    }
+    // Auto-updater disabled - requires code signing to work on macOS
+    // To re-enable: uncomment and set up Apple Developer signing
+    // if (app.isPackaged && mainWindow) {
+    //   initAutoUpdater(mainWindow);
+    // }
 
     // Create system tray
     createTray();

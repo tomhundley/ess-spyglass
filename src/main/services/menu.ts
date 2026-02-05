@@ -1,7 +1,8 @@
 import { app, Menu, shell, BrowserWindow } from 'electron';
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { checkForUpdates } from './autoUpdater';
+// Auto-updater disabled - requires code signing
+// import { checkForUpdates } from './autoUpdater';
 
 let aboutWindow: BrowserWindow | null = null;
 
@@ -284,7 +285,7 @@ export function createAppMenu(mainWindow: BrowserWindow | null) {
         { type: 'separator' as const },
         {
           label: 'Check for Updates...',
-          click: () => checkForUpdates(true),
+          enabled: false, // Disabled - requires code signing
         },
         { type: 'separator' as const },
         {

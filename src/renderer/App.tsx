@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useMemo } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { FileEntry, IndexEntry } from './types';
 import { BASE_FONT_SIZE, COPY_COLLAPSE_DELAY } from './constants';
 import {
@@ -47,6 +47,9 @@ function App() {
 
   // Update notification dismissed state
   const [updateDismissed, setUpdateDismissed] = useState(false);
+
+  // Ref for tracking copy-collapse timeout (to cancel on double-click)
+  const copyCollapseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Context menu states
   const [fileContextMenu, setFileContextMenu] = useState<FileContextMenuState | null>(null);
@@ -199,14 +202,24 @@ function App() {
     await handleCopy(entry.path);
     // Auto-collapse after copying in expanded focus mode
     if (focusMode && isExpanded) {
-      setTimeout(() => {
+      // Clear any existing timeout
+      if (copyCollapseTimeoutRef.current) {
+        clearTimeout(copyCollapseTimeoutRef.current);
+      }
+      copyCollapseTimeoutRef.current = setTimeout(() => {
         collapseToStrip();
+        copyCollapseTimeoutRef.current = null;
       }, COPY_COLLAPSE_DELAY);
     }
   }, [handleCopy, focusMode, isExpanded, collapseToStrip]);
 
-  // Handle double click - drill down into folder
+  // Handle double click - drill down into folder (don't collapse in focus mode)
   const handleDoubleClick = useCallback((entry: FileEntry | IndexEntry) => {
+    // Cancel any pending collapse from single-click
+    if (copyCollapseTimeoutRef.current) {
+      clearTimeout(copyCollapseTimeoutRef.current);
+      copyCollapseTimeoutRef.current = null;
+    }
     if (entry.is_directory) {
       navigateTo(entry.path);
     }
