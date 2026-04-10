@@ -54,21 +54,26 @@ export function PinnedFoldersBar({
   const hasQuery = isCollapsed && filterQuery.length >= 2;
   const showResults = hasQuery && searchResults.length > 0;
 
-  // Auto-focus input when entering collapsed mode
-  useEffect(() => {
-    if (isCollapsed) {
-      // Small delay to let the DOM render the input
-      requestAnimationFrame(() => filterInputRef.current?.focus());
-    }
-  }, [isCollapsed]);
-
-  // Auto-focus input when window regains focus (for hotkey activation)
+  // Auto-focus input when entering collapsed mode or when window regains focus
   useEffect(() => {
     if (!isCollapsed) return;
-    const unsubscribe = window.electron.onWindowFocus(() => {
+
+    // Focus immediately when entering collapsed mode
+    const raf = requestAnimationFrame(() => {
       filterInputRef.current?.focus();
     });
-    return unsubscribe;
+
+    // Also focus when the window regains focus (e.g. via global hotkey)
+    const handleWindowFocus = () => {
+      // Delay slightly to ensure Electron has finished showing the window
+      setTimeout(() => filterInputRef.current?.focus(), 50);
+    };
+    window.addEventListener('focus', handleWindowFocus);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener('focus', handleWindowFocus);
+    };
   }, [isCollapsed]);
 
   // Search the file index when typing (debounced)

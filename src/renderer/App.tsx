@@ -174,11 +174,6 @@ function App() {
     installUpdate,
   } = useAutoUpdater();
 
-  // Set up window focus/blur event forwarding from main process (once)
-  useEffect(() => {
-    void window.electron.setupWindowFocusEvents();
-  }, []);
-
   // Listen for menu events
   useEffect(() => {
     const unsubscribe = window.electron.onOpenSettings(() => {
