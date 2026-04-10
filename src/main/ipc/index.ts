@@ -73,6 +73,11 @@ export function registerIpcHandlers() {
     return { width: 700, height: 600 };
   });
 
+  ipcMain.on('window:hide', (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    win?.hide();
+  });
+
   ipcMain.on('window:minimize', (event) => {
     const win = BrowserWindow.fromWebContents(event.sender);
     win?.minimize();

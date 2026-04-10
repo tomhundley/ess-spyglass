@@ -87,6 +87,7 @@ export interface ElectronAPI {
   createNewWindow: (path: string) => Promise<void>;
   setWindowSize: (width: number, height: number) => Promise<void>;
   getWindowSize: () => Promise<{ width: number; height: number }>;
+  hideWindow: () => void;
   minimizeWindow: () => void;
   closeWindow: () => void;
 
@@ -143,6 +144,7 @@ const api: ElectronAPI = {
   createNewWindow: (path: string) => ipcRenderer.invoke('window:create', path),
   setWindowSize: (width: number, height: number) => ipcRenderer.invoke('window:setSize', width, height),
   getWindowSize: () => ipcRenderer.invoke('window:getSize'),
+  hideWindow: () => ipcRenderer.send('window:hide'),
   minimizeWindow: () => ipcRenderer.send('window:minimize'),
   closeWindow: () => ipcRenderer.send('window:close'),
 

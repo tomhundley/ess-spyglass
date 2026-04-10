@@ -22,7 +22,9 @@ interface UseFocusModeProps {
 }
 
 export function useFocusMode({ navigateTo, clearSearch }: UseFocusModeProps) {
-  const [focusMode, setFocusMode] = useState(false);
+  const [focusMode, setFocusMode] = useState(
+    () => localStorage.getItem(STORAGE_KEYS.FOCUS_MODE) === 'true'
+  );
   const [isExpanded, setIsExpanded] = useState(false);
   const [expandedFolderId, setExpandedFolderId] = useState<string | null>(null);
   const [entryCount, setEntryCount] = useState(0);
@@ -30,11 +32,24 @@ export function useFocusMode({ navigateTo, clearSearch }: UseFocusModeProps) {
   const normalSizeRef = useRef<{ width: number; height: number }>(NORMAL_SIZE);
   const isMouseInsideRef = useRef(true);
 
+  // On mount: if focus mode was persisted, collapse the window
+  // (main process creates it at the saved explore-mode size)
+  useEffect(() => {
+    if (focusMode) {
+      api.getWindowSize().then(({ width }) => {
+        api.setWindowSize(width, FOCUS_COLLAPSED_HEIGHT);
+      });
+    }
+  // Only run once on mount
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Toggle focus mode on/off
   const toggleFocusMode = useCallback(async () => {
     if (focusMode) {
       // Exiting focus mode - restore normal size
       setFocusMode(false);
+      localStorage.setItem(STORAGE_KEYS.FOCUS_MODE, 'false');
       setIsExpanded(false);
       setExpandedFolderId(null);
       const savedNormalSize = localStorage.getItem(STORAGE_KEYS.WINDOW_SIZE);
@@ -46,6 +61,7 @@ export function useFocusMode({ navigateTo, clearSearch }: UseFocusModeProps) {
       normalSizeRef.current = currentSize;
       localStorage.setItem(STORAGE_KEYS.WINDOW_SIZE, JSON.stringify(currentSize));
       setFocusMode(true);
+      localStorage.setItem(STORAGE_KEYS.FOCUS_MODE, 'true');
       setIsExpanded(false);
       setExpandedFolderId(null);
       await api.setWindowSize(currentSize.width, FOCUS_COLLAPSED_HEIGHT);

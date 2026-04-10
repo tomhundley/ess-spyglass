@@ -78,6 +78,11 @@ export async function getWindowSize(): Promise<{ width: number; height: number }
   return electron.getWindowSize();
 }
 
+// Hide window (to tray)
+export function hideWindow(): void {
+  electron.hideWindow();
+}
+
 // Theme
 export async function getSystemTheme(): Promise<'light' | 'dark'> {
   return electron.getSystemTheme();

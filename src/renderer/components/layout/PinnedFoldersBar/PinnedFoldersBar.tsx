@@ -20,7 +20,7 @@ interface PinnedFoldersBarProps {
   expandedFolderId: string | null;
   draggedFolderId: string | null;
   onFolderClick: (folder: PinnedFolder) => void;
-  onQuickCopy: (path: string) => void;
+  onQuickCopy: (path: string) => Promise<void>;
   onDragStart: (folderId: string, e: React.DragEvent) => void;
   onDragEnd: () => void;
   onDrop: (targetFolderId: string, e: React.DragEvent) => void;
@@ -45,14 +45,31 @@ export function PinnedFoldersBar({
 }: PinnedFoldersBarProps) {
   const [filterQuery, setFilterQuery] = useState('');
   const [searchResults, setSearchResults] = useState<IndexEntry[]>([]);
-  const [copiedPath, setCopiedPath] = useState<string | null>(null);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const filterInputRef = useRef<HTMLInputElement>(null);
-  const copiedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const resultsRef = useRef<HTMLDivElement>(null);
   const searchRequestRef = useRef(0);
 
   const isCollapsed = focusMode && !isExpanded;
   const hasQuery = isCollapsed && filterQuery.length >= 2;
   const showResults = hasQuery && searchResults.length > 0;
+
+  // Auto-focus input when entering collapsed mode
+  useEffect(() => {
+    if (isCollapsed) {
+      // Small delay to let the DOM render the input
+      requestAnimationFrame(() => filterInputRef.current?.focus());
+    }
+  }, [isCollapsed]);
+
+  // Auto-focus input when window regains focus (for hotkey activation)
+  useEffect(() => {
+    if (!isCollapsed) return;
+    const unsubscribe = window.electron.onWindowFocus(() => {
+      filterInputRef.current?.focus();
+    });
+    return unsubscribe;
+  }, [isCollapsed]);
 
   // Search the file index when typing (debounced)
   useEffect(() => {
@@ -75,6 +92,11 @@ export function PinnedFoldersBar({
     return () => clearTimeout(timeout);
   }, [filterQuery, isCollapsed, currentPath]);
 
+  // Reset highlight when results change
+  useEffect(() => {
+    setHighlightedIndex(-1);
+  }, [searchResults]);
+
   // Resize window when results appear/disappear
   useEffect(() => {
     if (!isCollapsed) return;
@@ -93,18 +115,23 @@ export function PinnedFoldersBar({
     resize();
   }, [isCollapsed, showResults, searchResults.length]);
 
-  // Handle clicking a search result: copy path + flash + collapse
-  const handleResultClick = useCallback((path: string) => {
-    onQuickCopy(path);
-    setCopiedPath(path);
-    if (copiedTimeoutRef.current) clearTimeout(copiedTimeoutRef.current);
-    copiedTimeoutRef.current = setTimeout(() => {
-      setCopiedPath(null);
-      setFilterQuery('');
-      setSearchResults([]);
-      filterInputRef.current?.blur();
-      copiedTimeoutRef.current = null;
-    }, 300);
+  // Scroll highlighted item into view
+  useEffect(() => {
+    if (highlightedIndex < 0) return;
+    const container = resultsRef.current;
+    if (!container) return;
+    const items = container.querySelectorAll('.file-item');
+    items[highlightedIndex]?.scrollIntoView({ block: 'nearest' });
+  }, [highlightedIndex]);
+
+  // Copy path + hide window instantly
+  const copyAndHide = useCallback(async (path: string) => {
+    await onQuickCopy(path);
+    // Clear state so it's fresh when window re-appears
+    setFilterQuery('');
+    setSearchResults([]);
+    setHighlightedIndex(-1);
+    api.hideWindow();
   }, [onQuickCopy]);
 
   // Clear all filter state when leaving collapsed mode
@@ -112,30 +139,40 @@ export function PinnedFoldersBar({
     if (!isCollapsed) {
       setFilterQuery('');
       setSearchResults([]);
-      setCopiedPath(null);
-      if (copiedTimeoutRef.current) {
-        clearTimeout(copiedTimeoutRef.current);
-        copiedTimeoutRef.current = null;
-      }
+      setHighlightedIndex(-1);
     }
   }, [isCollapsed]);
 
-  // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
-      if (copiedTimeoutRef.current) clearTimeout(copiedTimeoutRef.current);
-    };
-  }, []);
-
-  // Handle Escape in filter input
+  // Keyboard navigation: ArrowUp/Down, Enter, Escape
   const handleFilterKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
       e.stopPropagation();
       setFilterQuery('');
       setSearchResults([]);
+      setHighlightedIndex(-1);
       filterInputRef.current?.blur();
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (searchResults.length > 0) {
+        setHighlightedIndex(prev =>
+          prev < searchResults.length - 1 ? prev + 1 : 0
+        );
+      }
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      if (searchResults.length > 0) {
+        setHighlightedIndex(prev =>
+          prev <= 0 ? searchResults.length - 1 : prev - 1
+        );
+      }
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      if (searchResults.length > 0) {
+        const index = highlightedIndex >= 0 ? highlightedIndex : 0;
+        void copyAndHide(searchResults[index].path);
+      }
     }
-  }, []);
+  }, [searchResults, highlightedIndex, copyAndHide]);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -144,7 +181,6 @@ export function PinnedFoldersBar({
 
   return (
     <>
-      {/* The collapsed strip bar */}
       <div className="pinned-cards" onDragOver={handleDragOver}>
         {pinnedFolders.map((folder) => {
           const isActive = currentPath.startsWith(folder.path);
@@ -198,24 +234,30 @@ export function PinnedFoldersBar({
 
       {/* Search results list below the strip */}
       {showResults && (
-        <div className="collapsed-search-results">
-          {searchResults.map((entry) => (
-            <div
-              key={entry.path}
-              className={`file-item ${copiedPath === entry.path ? 'copied' : ''}`}
-              onClick={() => handleResultClick(entry.path)}
-            >
-              <div className="file-item-content">
-                <span className="file-icon">
-                  {entry.is_directory ? <FolderIcon /> : <FileIcon />}
-                </span>
-                <div className="file-info">
-                  <span className="file-name">{entry.name}</span>
-                  <span className="file-path">{abbreviatePathForDisplay(entry.path)}</span>
+        <div className="collapsed-search-results" ref={resultsRef}>
+          {searchResults.map((entry, index) => {
+            const isHighlighted = highlightedIndex === -1
+              ? index === 0
+              : index === highlightedIndex;
+
+            return (
+              <div
+                key={entry.path}
+                className={`file-item ${isHighlighted ? 'highlighted' : ''}`}
+                onClick={() => void copyAndHide(entry.path)}
+              >
+                <div className="file-item-content">
+                  <span className="file-icon">
+                    {entry.is_directory ? <FolderIcon /> : <FileIcon />}
+                  </span>
+                  <div className="file-info">
+                    <span className="file-name">{entry.name}</span>
+                    <span className="file-path">{abbreviatePathForDisplay(entry.path)}</span>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </>

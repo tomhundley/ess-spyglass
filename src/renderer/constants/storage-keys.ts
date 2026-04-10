@@ -4,6 +4,7 @@ export const STORAGE_KEYS = {
   SHOW_PATHS: 'spyglass-show-paths',
   USE_INDEX_SEARCH: 'spyglass-use-index-search',
   WINDOW_SIZE: 'spyglass-window-size',
+  FOCUS_MODE: 'spyglass-focus-mode',
 } as const;
 
 export type StorageKey = typeof STORAGE_KEYS[keyof typeof STORAGE_KEYS];
