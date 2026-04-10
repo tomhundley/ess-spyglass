@@ -1,5 +1,6 @@
 import { CheckIcon } from '../../icons';
 import { IndexProgress } from '../../../types';
+import { lastPathParts } from '../../../utils/path';
 
 interface IndexSectionProps {
   isIndexing: boolean;
@@ -37,7 +38,7 @@ export function IndexSection({
               <span>{indexProgress?.total_files.toLocaleString() || 0} files indexed</span>
             </div>
             <div className="index-current">
-              Scanning: {indexProgress?.current_folder.split('/').slice(-2).join('/') || '...'}
+              Scanning: {indexProgress?.current_folder ? lastPathParts(indexProgress.current_folder, 2) : '...'}
             </div>
           </>
         ) : (

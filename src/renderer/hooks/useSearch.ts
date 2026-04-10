@@ -28,7 +28,15 @@ export function useSearch({
   useEffect(() => {
     const savedShowPaths = localStorage.getItem(STORAGE_KEYS.SHOW_PATHS);
     if (savedShowPaths !== null) setShowPaths(savedShowPaths === 'true');
+
+    const savedUseIndexSearch = localStorage.getItem(STORAGE_KEYS.USE_INDEX_SEARCH);
+    if (savedUseIndexSearch !== null) setUseIndexSearch(savedUseIndexSearch === 'true');
   }, []);
+
+  // Persist index search preference
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.USE_INDEX_SEARCH, useIndexSearch.toString());
+  }, [useIndexSearch]);
 
   // Toggle paths
   const togglePaths = useCallback(() => {

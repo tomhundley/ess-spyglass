@@ -28,7 +28,14 @@ export function useKeyboardShortcuts({
       return;
     }
 
-    if (e.key === 'ArrowLeft') {
+    // Skip navigation shortcuts when focus is inside an input/textarea
+    const isInputFocused = document.activeElement instanceof HTMLInputElement
+      || document.activeElement instanceof HTMLTextAreaElement;
+
+    if (e.key === '[' && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      onNavigateBack();
+    } else if (e.key === 'ArrowLeft' && !isInputFocused) {
       onNavigateBack();
     } else if (e.key === 'Escape') {
       onEscape();

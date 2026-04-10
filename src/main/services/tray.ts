@@ -1,17 +1,19 @@
-import { Tray, Menu, app, nativeImage } from 'electron';
+import { Tray, Menu, app, nativeImage, type NativeImage } from 'electron';
 import { getMainWindow } from './windows';
 import * as path from 'path';
 
 let tray: Tray | null = null;
 
 export function createTray(): void {
-  // Create a simple icon (you can replace with actual icon file)
+  const basePath = app.isPackaged
+    ? path.join(process.resourcesPath, 'resources')
+    : path.join(__dirname, '../../resources');
   const iconPath = process.platform === 'darwin'
-    ? path.join(__dirname, '../../resources/iconTemplate.png')
-    : path.join(__dirname, '../../resources/icon.png');
+    ? path.join(basePath, 'iconTemplate.png')
+    : path.join(basePath, 'icon.png');
 
   // Try to load icon, fall back to empty image if not found
-  let icon: nativeImage;
+  let icon: NativeImage;
   try {
     icon = nativeImage.createFromPath(iconPath);
     if (icon.isEmpty()) {
@@ -49,7 +51,6 @@ export function createTray(): void {
     {
       label: 'Quit',
       click: () => {
-        (app as any).isQuitting = true;
         app.quit();
       },
     },

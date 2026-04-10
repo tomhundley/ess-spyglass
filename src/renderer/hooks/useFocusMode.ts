@@ -48,9 +48,7 @@ export function useFocusMode({ navigateTo, clearSearch }: UseFocusModeProps) {
       setFocusMode(true);
       setIsExpanded(false);
       setExpandedFolderId(null);
-      const savedCollapsedHeight = localStorage.getItem(STORAGE_KEYS.FOCUS_COLLAPSED_HEIGHT);
-      const height = savedCollapsedHeight ? parseInt(savedCollapsedHeight) : FOCUS_COLLAPSED_HEIGHT;
-      await api.setWindowSize(currentSize.width, height);
+      await api.setWindowSize(currentSize.width, FOCUS_COLLAPSED_HEIGHT);
     }
   }, [focusMode]);
 
@@ -77,9 +75,7 @@ export function useFocusMode({ navigateTo, clearSearch }: UseFocusModeProps) {
 
     // Resize window to collapsed height
     const currentSize = await api.getWindowSize();
-    const savedCollapsedHeight = localStorage.getItem(STORAGE_KEYS.FOCUS_COLLAPSED_HEIGHT);
-    const height = savedCollapsedHeight ? parseInt(savedCollapsedHeight) : FOCUS_COLLAPSED_HEIGHT;
-    await api.setWindowSize(currentSize.width, height);
+    await api.setWindowSize(currentSize.width, FOCUS_COLLAPSED_HEIGHT);
   }, [focusMode, clearSearch]);
 
   // Toggle expand/collapse for a folder

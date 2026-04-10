@@ -525,7 +525,7 @@ body {
 .search-bar .theme-toggle {
   background: none;
   border: none;
-  color: var(--text-muted);
+  color: var(--text-secondary);
   cursor: pointer;
   padding: 8px;
   border-radius: 6px;
@@ -1338,6 +1338,44 @@ body {
 .app.focus-mode.collapsed .focus-toggle svg {
   width: 12px;
   height: 12px;
+}
+
+/* Quick-filter input in collapsed strip */
+.app.focus-mode.collapsed .collapsed-filter-input {
+  -webkit-app-region: no-drag;
+  height: 24px;
+  min-width: 60px;
+  max-width: 140px;
+  flex: 0 1 140px;
+  padding: 2px 10px;
+  margin-left: 4px;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-size: 11px;
+  font-family: var(--font-mono);
+  outline: none;
+  transition: border-color 0.15s ease, background 0.15s ease, flex 0.2s ease;
+}
+
+.app.focus-mode.collapsed .collapsed-filter-input::placeholder {
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+
+.app.focus-mode.collapsed .collapsed-filter-input:focus {
+  border-color: var(--accent-color);
+  background: var(--bg-secondary);
+  flex: 0 1 180px;
+  max-width: 180px;
+}
+
+/* Quick-copy flash on pinned card */
+.app.focus-mode.collapsed .card.quick-copied {
+  background: var(--accent-glow);
+  border-color: var(--accent-color);
+  transition: background 0.1s ease;
 }
 
 /* Custom scrollbar for collapsed pinned bar */

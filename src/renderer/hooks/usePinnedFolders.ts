@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import * as api from '../api/electron';
 import { generateId } from '../types';
 import { TAB_COLORS } from '../constants';
+import { basename } from '../utils/path';
 
 export interface PinnedFolder {
   id: string;
@@ -10,7 +11,7 @@ export interface PinnedFolder {
   color: string;
 }
 
-export function usePinnedFolders(currentPath: string) {
+export function usePinnedFolders() {
   const [pinnedFolders, setPinnedFolders] = useState<PinnedFolder[]>([]);
   const [draggedFolderId, setDraggedFolderId] = useState<string | null>(null);
 
@@ -18,18 +19,16 @@ export function usePinnedFolders(currentPath: string) {
   const savePinnedFolders = useCallback(async (folders: PinnedFolder[]) => {
     try {
       await api.saveConfig({
-        remember_location: true,
-        last_location: currentPath,
         tabs: folders.map(f => ({ id: f.id, path: f.path, name: f.name, color: f.color })),
       });
     } catch (e) {
       console.error('Failed to save pinned folders:', e);
     }
-  }, [currentPath]);
+  }, []);
 
   // Pin a folder
   const pinFolder = useCallback((path: string) => {
-    const name = path.split('/').pop() || '~';
+    const name = basename(path) || '~';
     const newFolder: PinnedFolder = {
       id: generateId(),
       path,

@@ -5,6 +5,7 @@ import { PinnedFolder } from '../../../hooks';
 interface PinnedCardProps {
   folder: PinnedFolder;
   isActive: boolean;
+  isCopied: boolean;
   isExpandedActive: boolean;
   isDragging: boolean;
   isDropTarget: boolean;
@@ -20,6 +21,7 @@ interface PinnedCardProps {
 export const PinnedCard = memo(function PinnedCard({
   folder,
   isActive,
+  isCopied,
   isExpandedActive,
   isDragging,
   isDropTarget,
@@ -34,6 +36,7 @@ export const PinnedCard = memo(function PinnedCard({
   const cardClasses = [
     'card',
     isActive ? 'active' : '',
+    isCopied ? 'quick-copied' : '',
     isDragging ? 'dragging' : '',
     isDropTarget ? 'drop-target' : '',
     isExpandedActive ? 'expanded-active' : '',

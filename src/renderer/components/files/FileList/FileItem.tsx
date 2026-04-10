@@ -1,6 +1,7 @@
 import { memo } from 'react';
 import { FolderIcon, FileIcon } from '../../icons';
 import { FileEntry, IndexEntry } from '../../../types';
+import { abbreviatePathForDisplay } from '../../../utils/path';
 
 interface FileItemProps {
   entry: FileEntry | IndexEntry;
@@ -19,7 +20,7 @@ export const FileItem = memo(function FileItem({
   onDoubleClick,
   onContextMenu,
 }: FileItemProps) {
-  const displayPath = entry.path.replace(/^\/Users\/[^/]+/, '~');
+  const displayPath = abbreviatePathForDisplay(entry.path);
 
   return (
     <div

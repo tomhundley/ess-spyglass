@@ -26,6 +26,15 @@ export async function copyToClipboard(text: string): Promise<void> {
   return electron.copyToClipboard(text);
 }
 
+// Shell / OS integration
+export async function openPath(path: string): Promise<void> {
+  return electron.openPath(path);
+}
+
+export async function showItemInFolder(path: string): Promise<void> {
+  return electron.showItemInFolder(path);
+}
+
 // Config
 export async function loadConfig(): Promise<Config> {
   return electron.loadConfig();

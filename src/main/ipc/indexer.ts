@@ -1,8 +1,9 @@
-import { ipcMain, BrowserWindow } from 'electron';
+import { ipcMain, app } from 'electron';
 import * as fs from 'fs/promises';
 import * as fsSync from 'fs';
 import * as path from 'path';
 import * as os from 'os';
+import store from '../store';
 
 
 export interface IndexEntry {
@@ -58,13 +59,13 @@ let isIndexing = false;
 function calculateProximityScore(entryPath: string, currentPath: string): number {
   if (!currentPath) return 0;
 
-  const entryParts = entryPath.split('/').filter(Boolean);
-  const currentParts = currentPath.split('/').filter(Boolean);
+  const entryParts = entryPath.split(/[\\/]+/).filter(Boolean);
+  const currentParts = currentPath.split(/[\\/]+/).filter(Boolean);
 
   // Find common prefix length
   let commonDepth = 0;
   for (let i = 0; i < Math.min(entryParts.length, currentParts.length); i++) {
-    if (entryParts[i] === currentParts[i]) {
+    if (entryParts[i].toLowerCase() === currentParts[i].toLowerCase()) {
       commonDepth++;
     } else {
       break;
@@ -80,21 +81,22 @@ function calculateProximityScore(entryPath: string, currentPath: string): number
   return Math.max(0, 500 - (distance * 50));
 }
 
-function getConfigDir(): string {
-  const configDir = process.platform === 'darwin'
+function getIndexPath(): string {
+  // Prefer Electron's userData (correct location on all platforms).
+  return path.join(app.getPath('userData'), 'index.json');
+}
+
+function getLegacyIndexPath(): string {
+  // Back-compat for older index location.
+  const legacyDir = process.platform === 'darwin'
     ? path.join(os.homedir(), '.config', 'spyglass')
     : path.join(os.homedir(), '.spyglass');
-  return configDir;
+  return path.join(legacyDir, 'index.json');
 }
 
-function getIndexPath(): string {
-  return path.join(getConfigDir(), 'index.json');
-}
-
-async function ensureConfigDir(): Promise<void> {
-  const configDir = getConfigDir();
+async function ensureIndexDir(): Promise<void> {
   try {
-    await fs.mkdir(configDir, { recursive: true });
+    await fs.mkdir(app.getPath('userData'), { recursive: true });
   } catch {
     // Directory might already exist
   }
@@ -159,6 +161,7 @@ async function indexDirectory(
     }
   } catch {
     // Skip directories we can't read
+    indexProgress.indexed_folders += 1;
   }
 }
 
@@ -177,7 +180,8 @@ export function registerIndexerHandlers() {
       is_complete: false,
     };
 
-    const homeDir = os.homedir();
+    const config = store.get('config', {}) as { root_folder?: string | null };
+    const rootDir = config.root_folder || os.homedir();
 
     // Run indexing in background
     setImmediate(async () => {
@@ -185,7 +189,7 @@ export function registerIndexerHandlers() {
         const newEntries: IndexEntry[] = [];
         const newLowerNames: string[] = [];
 
-        await indexDirectory(homeDir, newEntries, newLowerNames, false);
+        await indexDirectory(rootDir, newEntries, newLowerNames, false);
 
         // Update global state
         indexEntries = newEntries;
@@ -195,14 +199,11 @@ export function registerIndexerHandlers() {
         isIndexing = false;
 
         // Save index to disk
-        await ensureConfigDir();
+        await ensureIndexDir();
         const indexPath = getIndexPath();
         await fs.writeFile(indexPath, JSON.stringify(newEntries));
 
-        // Notify all windows
-        BrowserWindow.getAllWindows().forEach(win => {
-          win.webContents.send('index-complete', indexProgress.total_files);
-        });
+        // Renderer polls for completion via indexer:getProgress
       } catch (error) {
         console.error('Indexing failed:', error);
         isIndexing = false;
@@ -259,7 +260,8 @@ export function registerIndexerHandlers() {
       score += 50 - Math.min(entry.name.length, 50);
 
       // Files in projects folder get bonus
-      if (entry.path.includes('/projects/')) {
+      const normalizedPath = entry.path.replace(/\\/g, '/').toLowerCase();
+      if (normalizedPath.includes('/projects/')) {
         score += 100;
       }
 
@@ -280,13 +282,15 @@ export function registerIndexerHandlers() {
 
   ipcMain.handle('indexer:loadSaved', async (): Promise<boolean> => {
     const indexPath = getIndexPath();
+    const legacyIndexPath = getLegacyIndexPath();
 
     try {
-      if (!fsSync.existsSync(indexPath)) {
-        return false;
-      }
+      const pathToLoad = fsSync.existsSync(indexPath)
+        ? indexPath
+        : (fsSync.existsSync(legacyIndexPath) ? legacyIndexPath : null);
+      if (!pathToLoad) return false;
 
-      const content = await fs.readFile(indexPath, 'utf-8');
+      const content = await fs.readFile(pathToLoad, 'utf-8');
       const entries = JSON.parse(content) as IndexEntry[];
 
       indexEntries = entries;
@@ -298,6 +302,16 @@ export function registerIndexerHandlers() {
         current_folder: '',
         is_complete: true,
       };
+
+      // Migrate legacy index to the new location.
+      if (pathToLoad === legacyIndexPath && !fsSync.existsSync(indexPath)) {
+        try {
+          await ensureIndexDir();
+          await fs.writeFile(indexPath, JSON.stringify(entries));
+        } catch {
+          // Best-effort migration.
+        }
+      }
 
       return true;
     } catch {

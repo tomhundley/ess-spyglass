@@ -2,17 +2,14 @@ import { useState, useCallback, useMemo, useEffect } from 'react';
 import * as api from '../api/electron';
 import { FileEntry } from '../types';
 import { BREADCRUMB_MAX_SEGMENTS } from '../constants';
-
-interface BreadcrumbSegment {
-  name: string;
-  path: string;
-}
+import { buildBreadcrumbSegments, type BreadcrumbSegment } from '../utils/path';
 
 export function useNavigation() {
   const [currentPath, setCurrentPath] = useState<string>('');
   const [entries, setEntries] = useState<FileEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [rememberLocation, setRememberLocation] = useState(true);
 
   const loadDirectory = useCallback(async (path: string) => {
     setLoading(true);
@@ -21,13 +18,16 @@ export function useNavigation() {
       const result = await api.readDirectory(path);
       setEntries(result);
       setCurrentPath(path);
+      if (rememberLocation) {
+        void api.saveConfig({ last_location: path });
+      }
     } catch (e) {
       setError(String(e));
       setEntries([]);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [rememberLocation]);
 
   const navigateTo = useCallback(async (path: string) => {
     await loadDirectory(path);
@@ -56,14 +56,7 @@ export function useNavigation() {
   // Build breadcrumb segments
   const breadcrumbSegments = useMemo((): BreadcrumbSegment[] => {
     if (!currentPath) return [];
-    const parts = currentPath.split('/').filter(Boolean);
-    const segments: BreadcrumbSegment[] = [];
-    let path = '';
-    for (const part of parts) {
-      path += '/' + part;
-      segments.push({ name: part, path });
-    }
-    return segments.slice(-BREADCRUMB_MAX_SEGMENTS);
+    return buildBreadcrumbSegments(currentPath).slice(-BREADCRUMB_MAX_SEGMENTS);
   }, [currentPath]);
 
   // Initialize with path from URL or home directory
@@ -85,8 +78,14 @@ export function useNavigation() {
         const cfg = await api.loadConfig();
 
         if (mounted) {
-          // Start in last location or home directory
-          const startPath = cfg.last_location || await api.getHomeDir();
+          const shouldRemember = cfg.remember_location ?? true;
+          setRememberLocation(shouldRemember);
+
+          // Prefer a configured root folder, then last location, then home directory.
+          const fallbackRoot = cfg.root_folder || await api.getHomeDir();
+          const preferred = (shouldRemember && cfg.last_location) ? cfg.last_location : fallbackRoot;
+          const exists = await api.pathExists(preferred);
+          const startPath = exists ? preferred : fallbackRoot;
           await loadDirectory(startPath);
         }
       } catch (e) {

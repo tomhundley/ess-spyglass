@@ -68,6 +68,10 @@ export interface ElectronAPI {
   // Clipboard
   copyToClipboard: (text: string) => Promise<void>;
 
+  // Shell / OS integration
+  openPath: (path: string) => Promise<void>;
+  showItemInFolder: (path: string) => Promise<void>;
+
   // Config
   loadConfig: () => Promise<Config>;
   saveConfig: (config: Partial<Config>) => Promise<void>;
@@ -119,6 +123,10 @@ const api: ElectronAPI = {
 
   // Clipboard
   copyToClipboard: (text: string) => ipcRenderer.invoke('clipboard:write', text),
+
+  // Shell / OS integration
+  openPath: (path: string) => ipcRenderer.invoke('shell:openPath', path),
+  showItemInFolder: (path: string) => ipcRenderer.invoke('shell:showItemInFolder', path),
 
   // Config
   loadConfig: () => ipcRenderer.invoke('config:load'),

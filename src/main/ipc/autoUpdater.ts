@@ -12,7 +12,8 @@ export function registerAutoUpdaterHandlers() {
   });
 
   ipcMain.handle('update:check', async () => {
-    await checkForUpdates();
+    // Renderer-triggered checks are manual.
+    await checkForUpdates(true);
   });
 
   ipcMain.handle('update:download', async () => {

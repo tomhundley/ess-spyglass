@@ -19,6 +19,7 @@ export interface UpdateState {
 let mainWindow: BrowserWindow | null = null;
 let updateState: UpdateState = { status: 'idle' };
 let isManualCheck = false;
+let isInitialized = false;
 
 function sendUpdateState() {
   if (mainWindow && !mainWindow.isDestroyed()) {
@@ -39,6 +40,7 @@ export function initAutoUpdater(window: BrowserWindow) {
   }
 
   mainWindow = window;
+  isInitialized = true;
 
   // Configure auto-updater
   autoUpdater.autoDownload = false;
@@ -154,6 +156,20 @@ export async function checkForUpdates(manual = false): Promise<void> {
     }
     return;
   }
+
+  if (!isInitialized) {
+    if (manual) {
+      dialog.showMessageBox({
+        type: 'info',
+        title: 'Updates Disabled',
+        message: 'Auto-update is disabled in this build.',
+        detail: 'To enable updates, re-enable the auto-updater in the main process and configure signing/publishing.',
+        buttons: ['OK'],
+      });
+    }
+    return;
+  }
+
   isManualCheck = manual;
   try {
     await autoUpdater.checkForUpdates();
@@ -172,7 +188,7 @@ export async function checkForUpdates(manual = false): Promise<void> {
 }
 
 export async function downloadUpdate(): Promise<void> {
-  if (!app.isPackaged) {
+  if (!app.isPackaged || !isInitialized) {
     return;
   }
   try {
@@ -187,7 +203,7 @@ export async function downloadUpdate(): Promise<void> {
 }
 
 export function installUpdate(): void {
-  if (!app.isPackaged) {
+  if (!app.isPackaged || !isInitialized) {
     return;
   }
   autoUpdater.quitAndInstall();

@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { FileEntry, IndexEntry } from './types';
 import { BASE_FONT_SIZE, COPY_COLLAPSE_DELAY } from './constants';
+import * as electronApi from './api/electron';
 import {
   useTheme,
   useAppZoom,
@@ -85,7 +86,7 @@ function App() {
     unpinFolder,
     reorderPinnedFolders,
     isPinned,
-  } = usePinnedFolders(currentPath);
+  } = usePinnedFolders();
 
   // Hidden files toggle
   const { showHiddenFiles, toggleShowHiddenFiles } = useHiddenFiles();
@@ -148,12 +149,22 @@ function App() {
     clearSearch,
   });
 
-  // Update entry count when entries change (for dynamic height in focus mode)
+  // Update entry count when list changes (for dynamic height in focus mode)
   useEffect(() => {
-    if (focusMode && isExpanded && visibleEntries.length > 0) {
-      setExpandedEntryCount(visibleEntries.length);
-    }
-  }, [focusMode, isExpanded, visibleEntries, setExpandedEntryCount]);
+    if (!focusMode || !isExpanded) return;
+    const count = (useIndexSearch && searchQuery)
+      ? visibleIndexedResults.length
+      : filteredEntries.length;
+    setExpandedEntryCount(count);
+  }, [
+    focusMode,
+    isExpanded,
+    useIndexSearch,
+    searchQuery,
+    visibleIndexedResults,
+    filteredEntries,
+    setExpandedEntryCount,
+  ]);
 
   // Auto-updater hook
   const {
@@ -180,7 +191,7 @@ function App() {
   // Handle escape (collapse in focus mode or clear search)
   const handleEscape = useCallback(() => {
     if (focusMode && isExpanded) {
-      collapseToStrip();
+      void collapseToStrip();
     } else {
       clearSearch();
     }
@@ -207,13 +218,13 @@ function App() {
         clearTimeout(copyCollapseTimeoutRef.current);
       }
       copyCollapseTimeoutRef.current = setTimeout(() => {
-        collapseToStrip();
+        void collapseToStrip();
         copyCollapseTimeoutRef.current = null;
       }, COPY_COLLAPSE_DELAY);
     }
   }, [handleCopy, focusMode, isExpanded, collapseToStrip]);
 
-  // Handle double click - drill down into folder (don't collapse in focus mode)
+  // Handle double click - drill down/open (don't collapse in focus mode)
   const handleDoubleClick = useCallback((entry: FileEntry | IndexEntry) => {
     // Cancel any pending collapse from single-click
     if (copyCollapseTimeoutRef.current) {
@@ -222,13 +233,17 @@ function App() {
     }
     if (entry.is_directory) {
       navigateTo(entry.path);
+    } else {
+      void electronApi.openPath(entry.path).catch(e => {
+        console.error('Failed to open path:', e);
+      });
     }
   }, [navigateTo]);
 
   // Handle pinned folder click
   const handlePinnedFolderClick = useCallback((folder: PinnedFolder) => {
     if (focusMode) {
-      expandToFolder(folder);
+      void expandToFolder(folder);
     } else {
       navigateTo(folder.path);
     }
@@ -244,6 +259,7 @@ function App() {
 
   // Handle drop on pinned folder
   const handleDrop = useCallback((targetFolderId: string, e: React.DragEvent) => {
+    if (focusMode) return;
     e.preventDefault();
     e.stopPropagation();
     const fromId = e.dataTransfer.getData('text/plain');
@@ -251,7 +267,7 @@ function App() {
       reorderPinnedFolders(fromId, targetFolderId);
     }
     setDraggedFolderId(null);
-  }, [reorderPinnedFolders, setDraggedFolderId]);
+  }, [focusMode, reorderPinnedFolders, setDraggedFolderId]);
 
   // Determine CSS classes for focus mode
   const appClassName = focusMode
@@ -281,6 +297,7 @@ function App() {
           expandedFolderId={expandedFolderId}
           draggedFolderId={draggedFolderId}
           onFolderClick={handlePinnedFolderClick}
+          onQuickCopy={(path: string) => handleCopy(path)}
           onDragStart={handleDragStart}
           onDragEnd={() => setDraggedFolderId(null)}
           onDrop={handleDrop}
@@ -345,6 +362,12 @@ function App() {
             y={fileContextMenu.y}
             entry={fileContextMenu.entry}
             isPinned={isPinned(fileContextMenu.entry.path)}
+            onOpen={() => {
+              void electronApi.openPath(fileContextMenu.entry.path).catch(e => console.error('Failed to open path:', e));
+            }}
+            onReveal={() => {
+              void electronApi.showItemInFolder(fileContextMenu.entry.path).catch(e => console.error('Failed to reveal item:', e));
+            }}
             onCopy={() => handleCopy(fileContextMenu.entry.path)}
             onPin={() => pinFolder(fileContextMenu.entry.path)}
             onOpenInNewWindow={() => openInNewWindow(fileContextMenu.entry.path)}
@@ -358,6 +381,9 @@ function App() {
             x={pinnedContextMenu.x}
             y={pinnedContextMenu.y}
             folder={pinnedContextMenu.folder}
+            onOpen={() => {
+              void electronApi.openPath(pinnedContextMenu.folder.path).catch(e => console.error('Failed to open path:', e));
+            }}
             onCopy={() => handleCopy(pinnedContextMenu.folder.path)}
             onUnpin={() => unpinFolder(pinnedContextMenu.folder.id)}
             onClose={() => setPinnedContextMenu(null)}

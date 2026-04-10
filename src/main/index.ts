@@ -12,6 +12,7 @@ import store from './store';
 app.name = 'Spyglass';
 
 let mainWindow: BrowserWindow | null = null;
+let isQuitting = false;
 
 function createMainWindow() {
   // Get saved window size, but ensure minimum height for explore mode
@@ -25,7 +26,10 @@ function createMainWindow() {
     minWidth: 300,
     minHeight: 38,
     title: 'Spyglass',
-    icon: join(__dirname, '../../resources/icon.png'),
+    icon: join(
+      app.isPackaged ? join(process.resourcesPath, 'resources') : join(__dirname, '../../resources'),
+      'icon.png'
+    ),
     show: false,
     frame: true,
     titleBarStyle: 'hiddenInset',
@@ -54,17 +58,21 @@ function createMainWindow() {
     mainWindow?.show();
   });
 
-  // Save window size on resize
+  // Save window size on resize (skip collapsed focus mode heights)
   mainWindow.on('resize', () => {
     if (mainWindow && !mainWindow.isMinimized()) {
       const [width, height] = mainWindow.getSize();
-      store.set('windowSize', { width, height });
+      // Don't persist tiny heights from focus mode collapse — they'd
+      // override the user's normal window size on next launch.
+      if (height >= MIN_EXPLORE_HEIGHT) {
+        store.set('windowSize', { width, height });
+      }
     }
   });
 
   // Handle close - hide to tray instead
   mainWindow.on('close', (event) => {
-    if (!app.isQuitting) {
+    if (!isQuitting) {
       event.preventDefault();
       mainWindow?.hide();
     }
@@ -153,7 +161,7 @@ if (!gotTheLock) {
   });
 
   app.on('before-quit', () => {
-    (app as any).isQuitting = true;
+    isQuitting = true;
     globalShortcut.unregisterAll();
     destroyTray();
   });

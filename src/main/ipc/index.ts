@@ -1,10 +1,10 @@
-import { ipcMain, BrowserWindow, clipboard, nativeTheme, app } from 'electron';
+import { ipcMain, BrowserWindow, clipboard, nativeTheme, app, shell } from 'electron';
 import { registerFileSystemHandlers } from './fileSystem';
 import { registerConfigHandlers } from './config';
 import { registerIndexerHandlers } from './indexer';
 import { registerAutoUpdaterHandlers } from './autoUpdater';
 import { createWindow } from '../services/windows';
-import { join } from 'path';
+import { join, basename } from 'path';
 
 export function registerIpcHandlers() {
   // Register domain-specific handlers
@@ -18,9 +18,21 @@ export function registerIpcHandlers() {
     clipboard.writeText(text);
   });
 
+  // Shell / OS integration
+  ipcMain.handle('shell:openPath', async (_event, targetPath: string) => {
+    const error = await shell.openPath(targetPath);
+    if (error) {
+      throw new Error(error);
+    }
+  });
+
+  ipcMain.handle('shell:showItemInFolder', async (_event, targetPath: string) => {
+    shell.showItemInFolder(targetPath);
+  });
+
   // Window management
-  ipcMain.handle('window:create', async (_event, path: string) => {
-    const name = path.split('/').pop() || 'Spyglass';
+  ipcMain.handle('window:create', async (_event, targetPath: string) => {
+    const name = basename(targetPath) || 'Spyglass';
     const win = createWindow({
       width: 700,
       height: 600,
@@ -33,16 +45,14 @@ export function registerIpcHandlers() {
       },
     });
 
-    // Pass the path to the new window
-    win.webContents.once('did-finish-load', () => {
-      win.webContents.send('init-path', path);
-    });
-
-    if (process.env.NODE_ENV === 'development') {
-      win.loadURL(`http://localhost:5173?path=${encodeURIComponent(path)}`);
+    const rendererUrl = process.env.ELECTRON_RENDERER_URL;
+    if (rendererUrl) {
+      const url = new URL(rendererUrl);
+      url.searchParams.set('path', targetPath);
+      win.loadURL(url.toString());
     } else {
       win.loadFile(join(__dirname, '../renderer/index.html'), {
-        query: { path },
+        query: { path: targetPath },
       });
     }
   });

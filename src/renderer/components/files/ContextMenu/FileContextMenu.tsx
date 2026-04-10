@@ -6,6 +6,8 @@ interface FileContextMenuProps {
   y: number;
   entry: FileEntry;
   isPinned: boolean;
+  onOpen: () => void;
+  onReveal: () => void;
   onCopy: () => void;
   onPin: () => void;
   onOpenInNewWindow: () => void;
@@ -17,6 +19,8 @@ export function FileContextMenu({
   y,
   entry,
   isPinned,
+  onOpen,
+  onReveal,
   onCopy,
   onPin,
   onOpenInNewWindow,
@@ -24,6 +28,14 @@ export function FileContextMenu({
 }: FileContextMenuProps) {
   return (
     <ContextMenu x={x} y={y}>
+      <ContextMenuItem onClick={() => { onOpen(); onClose(); }}>
+        {entry.is_directory ? 'Open in File Manager' : 'Open'}
+      </ContextMenuItem>
+      {!entry.is_directory && (
+        <ContextMenuItem onClick={() => { onReveal(); onClose(); }}>
+          Show in Folder
+        </ContextMenuItem>
+      )}
       <ContextMenuItem onClick={() => { onCopy(); onClose(); }}>
         Copy Path
       </ContextMenuItem>

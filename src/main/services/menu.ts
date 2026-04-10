@@ -247,7 +247,7 @@ export function createAboutWindow() {
     </div>
 
     <div class="links">
-      <a class="link" onclick="require('electron').shell.openExternal('https://github.com/tomhundley/spyglass')">GitHub</a>
+      <a class="link" href="https://github.com/tomhundley/spyglass" target="_blank" rel="noreferrer">GitHub</a>
     </div>
 
     <div class="footer">
@@ -258,6 +258,19 @@ export function createAboutWindow() {
 </body>
 </html>
 `;
+
+  // Ensure any external navigation opens in the system browser.
+  aboutWindow.webContents.setWindowOpenHandler(({ url }) => {
+    void shell.openExternal(url);
+    return { action: 'deny' };
+  });
+  aboutWindow.webContents.on('will-navigate', (event, url) => {
+    const current = aboutWindow?.webContents.getURL();
+    if (current && url !== current) {
+      event.preventDefault();
+      void shell.openExternal(url);
+    }
+  });
 
   aboutWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`);
 
