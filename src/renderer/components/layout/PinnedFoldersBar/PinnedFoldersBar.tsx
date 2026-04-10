@@ -8,8 +8,9 @@ import { PinnedCard } from './PinnedCard';
 import { FocusModeToggle } from './FocusModeToggle';
 import { FolderIcon, FileIcon } from '../../icons';
 
-const RESULT_ROW_HEIGHT = 36;
+const RESULT_ROW_HEIGHT = 50;
 const STRIP_HEIGHT = FOCUS_COLLAPSED_HEIGHT;
+const RESULTS_PADDING = 16;
 const MAX_DRAWER_HEIGHT = 500;
 const DEFAULT_MAX_DEPTH = 4;
 const DEPTH_STORAGE_KEY = 'spyglass-search-depth';
@@ -137,7 +138,7 @@ export function PinnedFoldersBar({
       const { width } = await api.getWindowSize();
       if (showResults) {
         // Fit content or cap at MAX_DRAWER_HEIGHT — scroll handles overflow
-        const contentHeight = STRIP_HEIGHT + (filteredResults.length * RESULT_ROW_HEIGHT) + 8;
+        const contentHeight = STRIP_HEIGHT + (filteredResults.length * RESULT_ROW_HEIGHT) + RESULTS_PADDING;
         const height = Math.min(contentHeight, MAX_DRAWER_HEIGHT);
         await api.setWindowSize(width, height);
       } else {
