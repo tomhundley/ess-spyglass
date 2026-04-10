@@ -10,7 +10,7 @@ import { FolderIcon, FileIcon } from '../../icons';
 
 const RESULT_ROW_HEIGHT = 36;
 const STRIP_HEIGHT = FOCUS_COLLAPSED_HEIGHT;
-const MAX_VISIBLE_RESULTS = 12;
+const MAX_DRAWER_HEIGHT = 500;
 const DEFAULT_MAX_DEPTH = 4;
 const DEPTH_STORAGE_KEY = 'spyglass-search-depth';
 
@@ -136,8 +136,9 @@ export function PinnedFoldersBar({
     async function resize() {
       const { width } = await api.getWindowSize();
       if (showResults) {
-        const visibleCount = Math.min(filteredResults.length, MAX_VISIBLE_RESULTS);
-        const height = STRIP_HEIGHT + (visibleCount * RESULT_ROW_HEIGHT) + 8;
+        // Fit content or cap at MAX_DRAWER_HEIGHT — scroll handles overflow
+        const contentHeight = STRIP_HEIGHT + (filteredResults.length * RESULT_ROW_HEIGHT) + 8;
+        const height = Math.min(contentHeight, MAX_DRAWER_HEIGHT);
         await api.setWindowSize(width, height);
       } else {
         await api.setWindowSize(width, STRIP_HEIGHT);
