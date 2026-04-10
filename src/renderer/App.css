@@ -1371,7 +1371,13 @@ body {
   max-width: 180px;
 }
 
-/* Quick-copy flash on pinned card */
+/* Search result cards in collapsed strip */
+.app.focus-mode.collapsed .card.search-result {
+  cursor: pointer;
+  -webkit-app-region: no-drag;
+}
+
+/* Quick-copy flash on card */
 .app.focus-mode.collapsed .card.quick-copied {
   background: var(--accent-glow);
   border-color: var(--accent-color);
