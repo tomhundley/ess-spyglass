@@ -48,7 +48,7 @@ export function IndexSection({
               <span>{indexCount.toLocaleString()} files indexed</span>
             </div>
             <button className="settings-button" onClick={onStartIndexing}>
-              Re-index Home Folder
+              Re-index
             </button>
           </>
         )}

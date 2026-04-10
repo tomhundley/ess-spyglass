@@ -1,4 +1,4 @@
-import { ipcMain, BrowserWindow, clipboard, nativeTheme, app, shell } from 'electron';
+import { ipcMain, BrowserWindow, clipboard, nativeTheme, app, shell, dialog } from 'electron';
 import { registerFileSystemHandlers } from './fileSystem';
 import { registerConfigHandlers } from './config';
 import { registerIndexerHandlers } from './indexer';
@@ -103,6 +103,16 @@ export function registerIpcHandlers() {
         }
       });
     }
+  });
+
+  // Folder picker
+  ipcMain.handle('dialog:openFolder', async (event): Promise<string | null> => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    const result = await dialog.showOpenDialog(win!, {
+      properties: ['openDirectory'],
+      title: 'Select folder to index',
+    });
+    return result.canceled ? null : result.filePaths[0] || null;
   });
 
   // Theme

@@ -26,6 +26,11 @@ export interface Tab {
   color: string;
 }
 
+export interface IndexPathEntry {
+  path: string;
+  recursive: boolean;
+}
+
 export interface Config {
   root_folder: string | null;
   global_hotkey: string | null;
@@ -34,6 +39,8 @@ export interface Config {
   show_hidden_files: boolean;
   tabs: Tab[] | null;
   active_tab_id: string | null;
+  index_paths: IndexPathEntry[];
+  exclude_patterns: string[];
 }
 
 export interface ContextMenu {

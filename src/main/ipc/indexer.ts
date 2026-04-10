@@ -21,27 +21,7 @@ export interface IndexProgress {
   is_complete: boolean;
 }
 
-// Skip these directories during indexing
-const SKIP_DIRECTORIES = new Set([
-  'node_modules',
-  'target',
-  '.git',
-  'dist',
-  'build',
-  '.next',
-  'vendor',
-  '__pycache__',
-  '.venv',
-  'venv',
-  '.cargo',
-  'Library',
-  '.Trash',
-  'Applications',
-  '.cache',
-  '.npm',
-  '.yarn',
-  'Caches',
-]);
+import { DEFAULT_EXCLUDE_PATTERNS, type IndexPathEntry } from './config';
 
 // Global indexing state
 let indexEntries: IndexEntry[] = [];
@@ -106,25 +86,19 @@ async function indexDirectory(
   dirPath: string,
   entries: IndexEntry[],
   lowerNamesArr: string[],
-  skipHidden: boolean = false
+  skipSet: Set<string>,
+  recursive: boolean = true,
 ): Promise<void> {
   try {
     const dirEntries = await fs.readdir(dirPath, { withFileTypes: true });
     const parentFolder = path.basename(dirPath) || '~';
 
-    // Update current folder in progress
     indexProgress.current_folder = dirPath;
 
     const subdirs: string[] = [];
 
     for (const entry of dirEntries) {
       const name = entry.name;
-
-      // Skip hidden files/folders
-      if (skipHidden && name.startsWith('.')) {
-        continue;
-      }
-
       const filePath = path.join(dirPath, name);
       const isDir = entry.isDirectory();
       const nameLower = name.toLowerCase();
@@ -137,30 +111,23 @@ async function indexDirectory(
       });
       lowerNamesArr.push(nameLower);
 
-      // Update total files count less frequently
       if (entries.length % 100 === 0) {
         indexProgress.total_files = entries.length;
       }
 
-      if (isDir) {
-        // Skip common large/unneeded directories
-        if (!SKIP_DIRECTORIES.has(name)) {
-          indexProgress.total_folders += 1;
-          subdirs.push(filePath);
-        }
+      if (isDir && recursive && !skipSet.has(name)) {
+        indexProgress.total_folders += 1;
+        subdirs.push(filePath);
       }
     }
 
-    // Update indexed folders count
     indexProgress.indexed_folders += 1;
     indexProgress.total_files = entries.length;
 
-    // Recursively index subdirectories
     for (const subdir of subdirs) {
-      await indexDirectory(subdir, entries, lowerNamesArr, skipHidden);
+      await indexDirectory(subdir, entries, lowerNamesArr, skipSet, true);
     }
   } catch {
-    // Skip directories we can't read
     indexProgress.indexed_folders += 1;
   }
 }
@@ -180,8 +147,21 @@ export function registerIndexerHandlers() {
       is_complete: false,
     };
 
-    const config = store.get('config', {}) as { root_folder?: string | null };
-    const rootDir = config.root_folder || os.homedir();
+    const config = store.get('config', {}) as {
+      index_paths?: IndexPathEntry[];
+      exclude_patterns?: string[];
+      root_folder?: string | null;
+    };
+
+    // Determine paths to index
+    let paths: IndexPathEntry[] = config.index_paths || [];
+    if (paths.length === 0) {
+      // Fallback: legacy root_folder or ~/projects
+      const fallback = config.root_folder || path.join(os.homedir(), 'projects');
+      paths = [{ path: fallback, recursive: true }];
+    }
+
+    const skipSet = new Set(config.exclude_patterns || DEFAULT_EXCLUDE_PATTERNS);
 
     // Run indexing in background
     setImmediate(async () => {
@@ -189,7 +169,9 @@ export function registerIndexerHandlers() {
         const newEntries: IndexEntry[] = [];
         const newLowerNames: string[] = [];
 
-        await indexDirectory(rootDir, newEntries, newLowerNames, false);
+        for (const entry of paths) {
+          await indexDirectory(entry.path, newEntries, newLowerNames, skipSet, entry.recursive);
+        }
 
         // Update global state
         indexEntries = newEntries;

@@ -1,8 +1,9 @@
 import { CloseIcon } from '../../icons';
 import { Theme } from '../../../hooks';
-import { IndexProgress, UpdateState } from '../../../types';
+import { IndexProgress, IndexPathEntry, UpdateState } from '../../../types';
 import { ThemeSection } from './ThemeSection';
 import { DisplaySection } from './DisplaySection';
+import { ScopeSection } from './ScopeSection';
 import { IndexSection } from './IndexSection';
 import { AboutSection } from './AboutSection';
 
@@ -22,6 +23,13 @@ interface SettingsPanelProps {
   onZoomIn: () => void;
   onZoomOut: () => void;
   onResetZoom: () => void;
+
+  // Search scope
+  indexPaths: IndexPathEntry[];
+  excludePatterns: string[];
+  onUpdateIndexPaths: (paths: IndexPathEntry[]) => void;
+  onUpdateExcludePatterns: (patterns: string[]) => void;
+  onPickFolder: () => Promise<string | null>;
 
   // Index
   isIndexing: boolean;
@@ -50,6 +58,11 @@ export function SettingsPanel({
   onZoomIn,
   onZoomOut,
   onResetZoom,
+  indexPaths,
+  excludePatterns,
+  onUpdateIndexPaths,
+  onUpdateExcludePatterns,
+  onPickFolder,
   isIndexing,
   indexProgress,
   indexCount,
@@ -80,6 +93,13 @@ export function SettingsPanel({
             onZoomIn={onZoomIn}
             onZoomOut={onZoomOut}
             onResetZoom={onResetZoom}
+          />
+          <ScopeSection
+            indexPaths={indexPaths}
+            excludePatterns={excludePatterns}
+            onUpdatePaths={onUpdateIndexPaths}
+            onUpdateExcludes={onUpdateExcludePatterns}
+            onPickFolder={onPickFolder}
           />
           <IndexSection
             isIndexing={isIndexing}

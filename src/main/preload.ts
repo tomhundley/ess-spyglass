@@ -29,6 +29,11 @@ export interface Tab {
   color: string;
 }
 
+export interface IndexPathEntry {
+  path: string;
+  recursive: boolean;
+}
+
 export interface Config {
   root_folder: string | null;
   global_hotkey: string | null;
@@ -37,6 +42,8 @@ export interface Config {
   show_hidden_files: boolean;
   tabs: Tab[] | null;
   active_tab_id: string | null;
+  index_paths: IndexPathEntry[];
+  exclude_patterns: string[];
 }
 
 export interface UpdateInfo {
@@ -75,6 +82,7 @@ export interface ElectronAPI {
   // Config
   loadConfig: () => Promise<Config>;
   saveConfig: (config: Partial<Config>) => Promise<void>;
+  pickFolder: () => Promise<string | null>;
 
   // Indexing
   startIndexing: () => Promise<void>;
@@ -132,6 +140,7 @@ const api: ElectronAPI = {
   // Config
   loadConfig: () => ipcRenderer.invoke('config:load'),
   saveConfig: (config: Partial<Config>) => ipcRenderer.invoke('config:save', config),
+  pickFolder: () => ipcRenderer.invoke('dialog:openFolder'),
 
   // Indexing
   startIndexing: () => ipcRenderer.invoke('indexer:start'),

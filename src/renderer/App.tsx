@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
-import { FileEntry, IndexEntry } from './types';
+import { FileEntry, IndexEntry, IndexPathEntry } from './types';
 import { BASE_FONT_SIZE, COPY_COLLAPSE_DELAY } from './constants';
 import * as electronApi from './api/electron';
 import {
@@ -48,6 +48,10 @@ function App() {
 
   // Update notification dismissed state
   const [updateDismissed, setUpdateDismissed] = useState(false);
+
+  // Search scope state
+  const [indexPaths, setIndexPaths] = useState<IndexPathEntry[]>([]);
+  const [excludePatterns, setExcludePatterns] = useState<string[]>([]);
 
   // Ref for tracking copy-collapse timeout (to cancel on double-click)
   const copyCollapseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -173,6 +177,25 @@ function App() {
     downloadUpdate,
     installUpdate,
   } = useAutoUpdater();
+
+  // Load search scope config on mount
+  useEffect(() => {
+    electronApi.loadConfig().then(cfg => {
+      setIndexPaths(cfg.index_paths || []);
+      setExcludePatterns(cfg.exclude_patterns || []);
+    });
+  }, []);
+
+  // Update scope callbacks
+  const handleUpdateIndexPaths = useCallback((paths: IndexPathEntry[]) => {
+    setIndexPaths(paths);
+    void electronApi.saveConfig({ index_paths: paths });
+  }, []);
+
+  const handleUpdateExcludePatterns = useCallback((patterns: string[]) => {
+    setExcludePatterns(patterns);
+    void electronApi.saveConfig({ exclude_patterns: patterns });
+  }, []);
 
   // Listen for menu events
   useEffect(() => {
@@ -405,6 +428,11 @@ function App() {
             onZoomIn={zoomIn}
             onZoomOut={zoomOut}
             onResetZoom={resetZoom}
+            indexPaths={indexPaths}
+            excludePatterns={excludePatterns}
+            onUpdateIndexPaths={handleUpdateIndexPaths}
+            onUpdateExcludePatterns={handleUpdateExcludePatterns}
+            onPickFolder={() => electronApi.pickFolder()}
             isIndexing={isIndexing}
             indexProgress={indexProgress}
             indexCount={indexCount}

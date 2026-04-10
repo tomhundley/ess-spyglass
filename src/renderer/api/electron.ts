@@ -44,6 +44,10 @@ export async function saveConfig(config: Partial<Config>): Promise<void> {
   return electron.saveConfig(config);
 }
 
+export async function pickFolder(): Promise<string | null> {
+  return electron.pickFolder();
+}
+
 // Indexing
 export async function startIndexing(): Promise<void> {
   return electron.startIndexing();
