@@ -11,6 +11,18 @@ import { FolderIcon, FileIcon } from '../../icons';
 const RESULT_ROW_HEIGHT = 36;
 const STRIP_HEIGHT = FOCUS_COLLAPSED_HEIGHT;
 const MAX_VISIBLE_RESULTS = 12;
+const DEFAULT_MAX_DEPTH = 4;
+const DEPTH_STORAGE_KEY = 'spyglass-search-depth';
+
+// Count path segments relative to home dir (e.g. ~/projects/ess = 2)
+function pathDepth(p: string): number {
+  // Strip common home prefixes: /Users/x/, /home/x/, C:\Users\x\
+  const relative = p
+    .replace(/^\/Users\/[^/]+\//, '')
+    .replace(/^\/home\/[^/]+\//, '')
+    .replace(/^[A-Za-z]:[\\/]+Users[\\/]+[^\\/]+[\\/]+/i, '');
+  return relative.split(/[\\/]+/).filter(Boolean).length;
+}
 
 interface PinnedFoldersBarProps {
   pinnedFolders: PinnedFolder[];
@@ -46,13 +58,21 @@ export function PinnedFoldersBar({
   const [filterQuery, setFilterQuery] = useState('');
   const [searchResults, setSearchResults] = useState<IndexEntry[]>([]);
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  const [maxDepth, setMaxDepth] = useState(
+    () => parseInt(localStorage.getItem(DEPTH_STORAGE_KEY) || '') || DEFAULT_MAX_DEPTH
+  );
   const filterInputRef = useRef<HTMLInputElement>(null);
   const resultsRef = useRef<HTMLDivElement>(null);
   const searchRequestRef = useRef(0);
 
   const isCollapsed = focusMode && !isExpanded;
   const hasQuery = isCollapsed && filterQuery.length >= 2;
-  const showResults = hasQuery && searchResults.length > 0;
+
+  // Filter results by depth
+  const filteredResults = hasQuery
+    ? searchResults.filter(entry => pathDepth(entry.path) <= maxDepth)
+    : [];
+  const showResults = filteredResults.length > 0;
 
   // Auto-focus input when entering collapsed mode or when window regains focus
   useEffect(() => {
@@ -75,6 +95,13 @@ export function PinnedFoldersBar({
       window.removeEventListener('focus', handleWindowFocus);
     };
   }, [isCollapsed]);
+
+  // Persist depth setting
+  const handleDepthChange = useCallback((val: number) => {
+    const clamped = Math.max(1, Math.min(10, val));
+    setMaxDepth(clamped);
+    localStorage.setItem(DEPTH_STORAGE_KEY, clamped.toString());
+  }, []);
 
   // Search the file index when typing (debounced)
   useEffect(() => {
@@ -100,7 +127,7 @@ export function PinnedFoldersBar({
   // Reset highlight when results change
   useEffect(() => {
     setHighlightedIndex(-1);
-  }, [searchResults]);
+  }, [filteredResults.length]);
 
   // Resize window when results appear/disappear
   useEffect(() => {
@@ -109,7 +136,7 @@ export function PinnedFoldersBar({
     async function resize() {
       const { width } = await api.getWindowSize();
       if (showResults) {
-        const visibleCount = Math.min(searchResults.length, MAX_VISIBLE_RESULTS);
+        const visibleCount = Math.min(filteredResults.length, MAX_VISIBLE_RESULTS);
         const height = STRIP_HEIGHT + (visibleCount * RESULT_ROW_HEIGHT) + 8;
         await api.setWindowSize(width, height);
       } else {
@@ -118,7 +145,7 @@ export function PinnedFoldersBar({
     }
 
     resize();
-  }, [isCollapsed, showResults, searchResults.length]);
+  }, [isCollapsed, showResults, filteredResults.length]);
 
   // Scroll highlighted item into view
   useEffect(() => {
@@ -158,26 +185,26 @@ export function PinnedFoldersBar({
       filterInputRef.current?.blur();
     } else if (e.key === 'ArrowDown') {
       e.preventDefault();
-      if (searchResults.length > 0) {
+      if (filteredResults.length > 0) {
         setHighlightedIndex(prev =>
-          prev < searchResults.length - 1 ? prev + 1 : 0
+          prev < filteredResults.length - 1 ? prev + 1 : 0
         );
       }
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      if (searchResults.length > 0) {
+      if (filteredResults.length > 0) {
         setHighlightedIndex(prev =>
-          prev <= 0 ? searchResults.length - 1 : prev - 1
+          prev <= 0 ? filteredResults.length - 1 : prev - 1
         );
       }
     } else if (e.key === 'Enter') {
       e.preventDefault();
-      if (searchResults.length > 0) {
+      if (filteredResults.length > 0) {
         const index = highlightedIndex >= 0 ? highlightedIndex : 0;
-        void copyAndHide(searchResults[index].path);
+        void copyAndHide(filteredResults[index].path);
       }
     }
-  }, [searchResults, highlightedIndex, copyAndHide]);
+  }, [filteredResults, highlightedIndex, copyAndHide]);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -214,24 +241,37 @@ export function PinnedFoldersBar({
         })}
 
         {pinnedFolders.length === 0 && !focusMode && (
-          <div className="pinned-hint">Right-click a folder to pin it</div>
+          <div className="pinned-hint" title="Pin folders for quick access. Right-click any folder in the file list.">Right-click a folder to pin it</div>
         )}
         {pinnedFolders.length === 0 && focusMode && !hasQuery && (
           <div className="pinned-hint">No pinned folders</div>
         )}
 
         {isCollapsed && (
-          <input
-            ref={filterInputRef}
-            className="collapsed-filter-input"
-            type="text"
-            value={filterQuery}
-            onChange={(e) => setFilterQuery(e.target.value)}
-            onKeyDown={handleFilterKeyDown}
-            placeholder="Search..."
-            spellCheck={false}
-            autoComplete="off"
-          />
+          <>
+            <input
+              ref={filterInputRef}
+              className="collapsed-filter-input"
+              type="text"
+              value={filterQuery}
+              onChange={(e) => setFilterQuery(e.target.value)}
+              onKeyDown={handleFilterKeyDown}
+              placeholder="Search..."
+              title="Type to search indexed files. Arrow keys to navigate, Enter to copy path, Escape to clear."
+              spellCheck={false}
+              autoComplete="off"
+            />
+            <input
+              className="collapsed-depth-input"
+              type="number"
+              min={1}
+              max={10}
+              value={maxDepth}
+              onChange={(e) => handleDepthChange(parseInt(e.target.value) || DEFAULT_MAX_DEPTH)}
+              title={`Max folder depth from ~ (currently ${maxDepth}). Lower = shallower results.`}
+              onClick={(e) => e.stopPropagation()}
+            />
+          </>
         )}
 
         <FocusModeToggle focusMode={focusMode} onToggle={onToggleFocusMode} />
@@ -240,7 +280,7 @@ export function PinnedFoldersBar({
       {/* Search results list below the strip */}
       {showResults && (
         <div className="collapsed-search-results" ref={resultsRef}>
-          {searchResults.map((entry, index) => {
+          {filteredResults.map((entry, index) => {
             const isHighlighted = highlightedIndex === -1
               ? index === 0
               : index === highlightedIndex;
@@ -249,6 +289,7 @@ export function PinnedFoldersBar({
               <div
                 key={entry.path}
                 className={`file-item ${isHighlighted ? 'highlighted' : ''}`}
+                title={`${entry.path}\nClick or Enter to copy path`}
                 onClick={() => void copyAndHide(entry.path)}
               >
                 <div className="file-item-content">

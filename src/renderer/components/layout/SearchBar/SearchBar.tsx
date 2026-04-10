@@ -39,6 +39,7 @@ export function SearchBar({
         type="text"
         className="search-input"
         placeholder={placeholder}
+        title="Search files and folders. Press Escape to clear."
         value={searchQuery}
         onChange={(e) => onSearchChange(e.target.value)}
         onKeyDown={handleKeyDown}

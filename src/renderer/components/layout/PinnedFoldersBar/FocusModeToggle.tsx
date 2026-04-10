@@ -10,7 +10,7 @@ export function FocusModeToggle({ focusMode, onToggle }: FocusModeToggleProps) {
     <button
       className={`focus-toggle ${focusMode ? 'active' : ''}`}
       onClick={onToggle}
-      title={focusMode ? 'Exit focus mode' : 'Enter focus mode'}
+      title={focusMode ? 'Exit focus mode (return to file explorer)' : 'Enter focus mode (quick search strip)'}
     >
       {focusMode ? <ExpandIcon /> : <CollapseIcon />}
     </button>

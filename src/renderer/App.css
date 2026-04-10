@@ -1371,6 +1371,36 @@ body {
   max-width: 180px;
 }
 
+/* Depth limiter spinner */
+.app.focus-mode.collapsed .collapsed-depth-input {
+  -webkit-app-region: no-drag;
+  height: 24px;
+  width: 36px;
+  min-width: 36px;
+  padding: 2px 4px;
+  margin-left: 2px;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-size: 11px;
+  font-family: var(--font-mono);
+  text-align: center;
+  outline: none;
+  transition: border-color 0.15s ease;
+  -moz-appearance: textfield;
+}
+
+.app.focus-mode.collapsed .collapsed-depth-input::-webkit-inner-spin-button,
+.app.focus-mode.collapsed .collapsed-depth-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.app.focus-mode.collapsed .collapsed-depth-input:focus {
+  border-color: var(--accent-color);
+}
+
 /* Search results dropdown below collapsed strip */
 .collapsed-search-results {
   flex: 1;

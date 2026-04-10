@@ -7,6 +7,7 @@ interface BreadcrumbSegmentProps {
 
 export function BreadcrumbSegment({
   name,
+  path,
   isCurrent,
   onClick,
 }: BreadcrumbSegmentProps) {
@@ -14,6 +15,7 @@ export function BreadcrumbSegment({
     <span
       className={`breadcrumb-segment ${isCurrent ? 'current' : ''}`}
       onClick={isCurrent ? undefined : onClick}
+      title={isCurrent ? path : `Navigate to ${path}`}
     >
       {name}
     </span>

@@ -27,6 +27,7 @@ export function Breadcrumb({
         className={`breadcrumb-back ${!canGoBack ? 'disabled' : ''}`}
         onClick={onBack}
         disabled={!canGoBack}
+        title="Go to parent folder (Cmd+[ or Left arrow)"
       >
         <BackArrowIcon />
         <span className="breadcrumb-back-text">Back</span>

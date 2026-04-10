@@ -21,7 +21,7 @@ export function ToolbarButtons({
       <button
         className={`toolbar-btn ${showPaths ? 'active' : ''}`}
         onClick={onTogglePaths}
-        title={showPaths ? 'Hide paths' : 'Show paths'}
+        title={showPaths ? 'Hide file paths below names' : 'Show full file paths below names'}
       >
         <PathsIcon />
       </button>
@@ -29,7 +29,7 @@ export function ToolbarButtons({
       <button
         className="theme-toggle"
         onClick={onCycleTheme}
-        title={`Theme: ${theme}`}
+        title={`Current theme: ${theme}. Click to cycle: dark → light → system.`}
       >
         {theme === 'dark' ? (
           <MoonIcon />
@@ -43,7 +43,7 @@ export function ToolbarButtons({
       <button
         className="settings-button"
         onClick={onOpenSettings}
-        title="Settings"
+        title="Settings (Cmd+,)"
       >
         <SettingsIcon />
       </button>
