@@ -1371,17 +1371,51 @@ body {
   max-width: 180px;
 }
 
-/* Search result cards in collapsed strip */
-.app.focus-mode.collapsed .card.search-result {
-  cursor: pointer;
-  -webkit-app-region: no-drag;
+/* Search results dropdown below collapsed strip */
+.collapsed-search-results {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 2px 0 4px;
+  background: var(--bg-primary);
+  animation: expandContentIn 0.15s ease;
 }
 
-/* Quick-copy flash on card */
-.app.focus-mode.collapsed .card.quick-copied {
-  background: var(--accent-glow);
-  border-color: var(--accent-color);
-  transition: background 0.1s ease;
+.collapsed-search-results .file-item {
+  margin: 1px 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+}
+
+.collapsed-search-results .file-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+}
+
+.collapsed-search-results .file-name {
+  font-size: 12px;
+}
+
+.collapsed-search-results .file-path {
+  font-size: 10px;
+}
+
+.collapsed-search-results::-webkit-scrollbar {
+  width: 6px;
+}
+
+.collapsed-search-results::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.collapsed-search-results::-webkit-scrollbar-thumb {
+  background: var(--border-color);
+  border-radius: 3px;
+}
+
+.collapsed-search-results::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
 }
 
 /* Custom scrollbar for collapsed pinned bar */

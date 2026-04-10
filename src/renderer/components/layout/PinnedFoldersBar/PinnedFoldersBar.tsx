@@ -1,9 +1,16 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { PinnedFolder } from '../../../hooks';
 import { IndexEntry } from '../../../types';
+import { FOCUS_COLLAPSED_HEIGHT } from '../../../constants';
+import { abbreviatePathForDisplay } from '../../../utils/path';
 import * as api from '../../../api/electron';
 import { PinnedCard } from './PinnedCard';
 import { FocusModeToggle } from './FocusModeToggle';
+import { FolderIcon, FileIcon } from '../../icons';
+
+const RESULT_ROW_HEIGHT = 36;
+const STRIP_HEIGHT = FOCUS_COLLAPSED_HEIGHT;
+const MAX_VISIBLE_RESULTS = 12;
 
 interface PinnedFoldersBarProps {
   pinnedFolders: PinnedFolder[];
@@ -45,6 +52,7 @@ export function PinnedFoldersBar({
 
   const isCollapsed = focusMode && !isExpanded;
   const hasQuery = isCollapsed && filterQuery.length >= 2;
+  const showResults = hasQuery && searchResults.length > 0;
 
   // Search the file index when typing (debounced)
   useEffect(() => {
@@ -58,8 +66,7 @@ export function PinnedFoldersBar({
       try {
         const results = await api.searchIndex(filterQuery, currentPath);
         if (requestId !== searchRequestRef.current) return;
-        // Show folders first, then files — limit to 20 for strip display
-        setSearchResults(results.slice(0, 20));
+        setSearchResults(results.slice(0, 50));
       } catch {
         // Index may not be loaded yet
       }
@@ -68,7 +75,25 @@ export function PinnedFoldersBar({
     return () => clearTimeout(timeout);
   }, [filterQuery, isCollapsed, currentPath]);
 
-  // Handle clicking a search result: copy path + flash + clear
+  // Resize window when results appear/disappear
+  useEffect(() => {
+    if (!isCollapsed) return;
+
+    async function resize() {
+      const { width } = await api.getWindowSize();
+      if (showResults) {
+        const visibleCount = Math.min(searchResults.length, MAX_VISIBLE_RESULTS);
+        const height = STRIP_HEIGHT + (visibleCount * RESULT_ROW_HEIGHT) + 8;
+        await api.setWindowSize(width, height);
+      } else {
+        await api.setWindowSize(width, STRIP_HEIGHT);
+      }
+    }
+
+    resize();
+  }, [isCollapsed, showResults, searchResults.length]);
+
+  // Handle clicking a search result: copy path + flash + collapse
   const handleResultClick = useCallback((path: string) => {
     onQuickCopy(path);
     setCopiedPath(path);
@@ -79,7 +104,7 @@ export function PinnedFoldersBar({
       setSearchResults([]);
       filterInputRef.current?.blur();
       copiedTimeoutRef.current = null;
-    }, 250);
+    }, 300);
   }, [onQuickCopy]);
 
   // Clear all filter state when leaving collapsed mode
@@ -102,7 +127,7 @@ export function PinnedFoldersBar({
     };
   }, []);
 
-  // Handle Escape in filter input — stop propagation to prevent global handler
+  // Handle Escape in filter input
   const handleFilterKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
       e.stopPropagation();
@@ -118,81 +143,81 @@ export function PinnedFoldersBar({
   };
 
   return (
-    <div className="pinned-cards" onDragOver={handleDragOver}>
-      {/* When searching, show results instead of pinned folders */}
-      {hasQuery ? (
-        searchResults.length > 0 ? (
-          searchResults.map((entry) => (
+    <>
+      {/* The collapsed strip bar */}
+      <div className="pinned-cards" onDragOver={handleDragOver}>
+        {pinnedFolders.map((folder) => {
+          const isActive = currentPath.startsWith(folder.path);
+          const isExpandedActive = focusMode && isExpanded && expandedFolderId === folder.id;
+          const isDragging = draggedFolderId === folder.id;
+          const isDropTarget = draggedFolderId !== null && draggedFolderId !== folder.id;
+
+          return (
+            <PinnedCard
+              key={folder.id}
+              folder={folder}
+              isActive={isActive}
+              isCopied={false}
+              isExpandedActive={isExpandedActive}
+              isDragging={isDragging}
+              isDropTarget={isDropTarget}
+              focusMode={focusMode}
+              onClick={() => onFolderClick(folder)}
+              onDragStart={(e) => onDragStart(folder.id, e)}
+              onDragOver={handleDragOver}
+              onDragEnd={onDragEnd}
+              onDrop={(e) => onDrop(folder.id, e)}
+              onContextMenu={(e) => onContextMenu(e, folder)}
+            />
+          );
+        })}
+
+        {pinnedFolders.length === 0 && !focusMode && (
+          <div className="pinned-hint">Right-click a folder to pin it</div>
+        )}
+        {pinnedFolders.length === 0 && focusMode && !hasQuery && (
+          <div className="pinned-hint">No pinned folders</div>
+        )}
+
+        {isCollapsed && (
+          <input
+            ref={filterInputRef}
+            className="collapsed-filter-input"
+            type="text"
+            value={filterQuery}
+            onChange={(e) => setFilterQuery(e.target.value)}
+            onKeyDown={handleFilterKeyDown}
+            placeholder="Search..."
+            spellCheck={false}
+            autoComplete="off"
+          />
+        )}
+
+        <FocusModeToggle focusMode={focusMode} onToggle={onToggleFocusMode} />
+      </div>
+
+      {/* Search results list below the strip */}
+      {showResults && (
+        <div className="collapsed-search-results">
+          {searchResults.map((entry) => (
             <div
               key={entry.path}
-              className={`card search-result ${copiedPath === entry.path ? 'quick-copied' : ''}`}
-              title={entry.path}
+              className={`file-item ${copiedPath === entry.path ? 'copied' : ''}`}
               onClick={() => handleResultClick(entry.path)}
             >
-              <svg className="card-icon" viewBox="0 0 24 24" fill={entry.is_directory ? 'var(--folder-color)' : 'var(--file-color)'}>
-                {entry.is_directory
-                  ? <path d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z" />
-                  : <path d="M14 2H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm-1 2l5 5h-5V4z" />
-                }
-              </svg>
-              <span className="card-name">{entry.name}</span>
+              <div className="file-item-content">
+                <span className="file-icon">
+                  {entry.is_directory ? <FolderIcon /> : <FileIcon />}
+                </span>
+                <div className="file-info">
+                  <span className="file-name">{entry.name}</span>
+                  <span className="file-path">{abbreviatePathForDisplay(entry.path)}</span>
+                </div>
+              </div>
             </div>
-          ))
-        ) : (
-          <div className="pinned-hint">No matches</div>
-        )
-      ) : (
-        <>
-          {pinnedFolders.map((folder) => {
-            const isActive = currentPath.startsWith(folder.path);
-            const isExpandedActive = focusMode && isExpanded && expandedFolderId === folder.id;
-            const isDragging = draggedFolderId === folder.id;
-            const isDropTarget = draggedFolderId !== null && draggedFolderId !== folder.id;
-
-            return (
-              <PinnedCard
-                key={folder.id}
-                folder={folder}
-                isActive={isActive}
-                isCopied={false}
-                isExpandedActive={isExpandedActive}
-                isDragging={isDragging}
-                isDropTarget={isDropTarget}
-                focusMode={focusMode}
-                onClick={() => onFolderClick(folder)}
-                onDragStart={(e) => onDragStart(folder.id, e)}
-                onDragOver={handleDragOver}
-                onDragEnd={onDragEnd}
-                onDrop={(e) => onDrop(folder.id, e)}
-                onContextMenu={(e) => onContextMenu(e, folder)}
-              />
-            );
-          })}
-
-          {pinnedFolders.length === 0 && !focusMode && (
-            <div className="pinned-hint">Right-click a folder to pin it</div>
-          )}
-          {pinnedFolders.length === 0 && focusMode && (
-            <div className="pinned-hint">No pinned folders</div>
-          )}
-        </>
+          ))}
+        </div>
       )}
-
-      {isCollapsed && (
-        <input
-          ref={filterInputRef}
-          className="collapsed-filter-input"
-          type="text"
-          value={filterQuery}
-          onChange={(e) => setFilterQuery(e.target.value)}
-          onKeyDown={handleFilterKeyDown}
-          placeholder="Search..."
-          spellCheck={false}
-          autoComplete="off"
-        />
-      )}
-
-      <FocusModeToggle focusMode={focusMode} onToggle={onToggleFocusMode} />
-    </div>
+    </>
   );
 }
